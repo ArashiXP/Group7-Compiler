@@ -1,4 +1,4 @@
- /* $Id: asm.y,v 1.33 2023/09/18 16:03:54 leavens Exp $ */
+ /* $Id: asm.y,v 1.34 2023/09/22 15:43:11 leavens Exp leavens $ */
 
 %code top {
 #include <stdio.h>
@@ -17,7 +17,8 @@ extern void yyerror(const char *filename, const char *msg);
 }    
 
 %verbose
-%token-table
+%define parse.lac full
+%define parse.error detailed
 
 %parse-param { char const *file_name }
 

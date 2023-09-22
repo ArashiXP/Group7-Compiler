@@ -1,4 +1,4 @@
-	# $Id: vm_test6.asm,v 1.2 2023/09/21 18:48:31 leavens Exp leavens $
+	# $Id: vm_test6.asm,v 1.2 2023/09/21 18:48:31 leavens Exp $
 	.text start
 start:	ADDI $0, $t0, 1	# $t0 is 1
 	SLL $t0, $t1, 20  # $t1 is 2^20

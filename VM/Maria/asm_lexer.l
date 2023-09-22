@@ -1,4 +1,4 @@
-/* $Id: asm_lexer.l,v 1.24 2023/09/18 02:24:31 leavens Exp $ */
+/* $Id: asm_lexer.l,v 1.25 2023/09/22 15:43:11 leavens Exp leavens $ */
 /* Scanner for the SRM Assembly Language */
 
 %option header-file = "asm_lexer.h"
@@ -198,7 +198,7 @@ $t7             { namedreg2ast(15,yytext); return regsym; }
 $s0             { namedreg2ast(16,yytext); return regsym; }
 $s1             { namedreg2ast(17,yytext); return regsym; }
 $s2             { namedreg2ast(18,yytext); return regsym; }
-$s3             { namedreg2ast(18,yytext); return regsym; }
+$s3             { namedreg2ast(19,yytext); return regsym; }
 $s4             { namedreg2ast(20,yytext); return regsym; }
 $s5             { namedreg2ast(21,yytext); return regsym; }
 $s6             { namedreg2ast(22,yytext); return regsym; }
@@ -246,7 +246,7 @@ int yywrap() {
 void yyerror(const char *filename, const char *msg)
 {
     fflush(stdout);
-    fprintf(stderr, "%s line %d: %s\n", filename, lexer_line(), msg);
+    fprintf(stderr, "%s:%d: %s\n", filename, lexer_line(), msg);
 }
 
 /* On standard output:

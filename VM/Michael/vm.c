@@ -13,7 +13,7 @@ int main(int argc, char *arg[])
         return 0;
     }
 
-    BOFFILE bf;
+    BOFFILE bf; // Store the bof file somewhere
 
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for tracing
     {

@@ -598,7 +598,7 @@ int yy_flex_debug = 0;
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
 #line 1 "asm_lexer.l"
-/* $Id: asm_lexer.l,v 1.24 2023/09/18 02:24:31 leavens Exp $ */
+/* $Id: asm_lexer.l,v 1.25 2023/09/22 15:43:11 leavens Exp leavens $ */
 /* Scanner for the SRM Assembly Language */
 #line 10 "asm_lexer.l"
 #include <stdio.h>
@@ -1355,7 +1355,7 @@ YY_RULE_SETUP
 case 71:
 YY_RULE_SETUP
 #line 202 "asm_lexer.l"
-{ namedreg2ast(18,yytext); return regsym; }
+{ namedreg2ast(19,yytext); return regsym; }
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
@@ -2475,7 +2475,7 @@ int yywrap() {
 void yyerror(const char *filename, const char *msg)
 {
     fflush(stdout);
-    fprintf(stderr, "%s line %d: %s\n", filename, lexer_line(), msg);
+    fprintf(stderr, "%s:%d: %s\n", filename, lexer_line(), msg);
 }
 
 /* On standard output:

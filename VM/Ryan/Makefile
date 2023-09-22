@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.30 2023/09/21 18:48:31 leavens Exp leavens $
+# $Id: Makefile,v 1.31 2023/09/22 01:29:49 leavens Exp $
 # Makefile for PL/0 compiler and code generation
 
 # Add .exe to the end of target to get that suffix in the rules
@@ -43,7 +43,7 @@ $(VM): $(VM_OBJECTS)
 
 .PHONY: clean
 clean:
-	$(RM) *~ *.o *.myo '#'*
+	$(RM) *~ *.o *.myo *.myp '#'*
 	$(RM) $(VM).exe $(VM)
 	$(RM) *.stackdump core
 	$(RM) $(SUBMISSIONZIPFILE)
@@ -66,7 +66,7 @@ clean:
 # main target for testing
 .PHONY: check-outputs
 check-outputs: $(VM) $(ASM) $(TESTS) check-asm-outputs check-vm-outputs 
-	@echo 'be sure to look for two test summaries (listings and execution)'
+	@echo 'Be sure to look for two test summaries above (listings and execution)'
 
 check-asm-outputs:
 	DIFFS=0; \
@@ -202,9 +202,11 @@ create-asm-outputs: $(VM) $(ASM) $(TESTS)
 	echo 'done creating listing outputs!'
 
 .PHONY: digest
-digest digest.txt: 
-	for f in `ls $(TESTS) | sed -e 's/\\.bof//g'`; \
-        do cat $$f.bof; echo " "; cat $$f.out; echo " "; echo " "; \
+digest digest.txt: $(EXPECTEDOUTPUTS) $(EXPECTEDLISTINGS)
+	for f in $(EXPECTEDLISTINGS) ; \
+        do cat $$f; echo " "; \
+	cat `echo $$f | sed -e 's/\\.lst/.out/'`; \
+        echo " "; echo " "; \
         done >digest.txt
 
 # don't use develop-clean unless you want to regenerate the expected outputs
@@ -234,7 +236,7 @@ PROVIDEDFILES = Makefile asm_main.c asm.y asm_lexer.l \
 		vm_test*.asm vm_test*.out vm_test*.bof vm_test*.lst
 
 .PHONY: zip
-zip hw4-tests.zip: create-vm-outputs $(TESTSZIPFILE)
+zip hw1-tests.zip: create-vm-outputs $(TESTSZIPFILE)
 
 $(TESTSZIPFILE): Makefile $(TESTS) $(PROVIDEDFILES)
 	$(RM) $(TESTSZIPFILE)
