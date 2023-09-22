@@ -35,7 +35,7 @@ int main(int argc, char *arg[])
     printf("Data Length = %u\n",bfh.data_start_address);
     printf("Stack Bottom Addr = %u\n",bfh.stack_bottom_addr); // Is always 4096?
 
-    printf("\n*******************************************************************\n")
+    printf("\n*******************************************************************\n");
 
 
 
