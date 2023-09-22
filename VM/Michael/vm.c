@@ -9,6 +9,7 @@
 
 // Reminders
 // Make sure to delete all print statements that aren't necessary
+// Fix the formatting
 
 // ***************************For Tracing**********************************
 void trace(BOFFILE bf)
@@ -19,6 +20,7 @@ void trace(BOFFILE bf)
 
 // ***************************For Output************************************
 
+// Take in the header file and print out the correct format
 void printOut(FILE *out, BOFFILE bf)
 {
     BOFHeader bh = bof_read_header(bf);
@@ -32,20 +34,19 @@ void printText(FILE *out, BOFFILE bf, BOFHeader bh)
     fprintf(out, "Addr Instruction");
     newline(out);
     int length = (bh.text_length / BYTES_PER_WORD);
+    // Will call a function to print the PC and instruction
     for (int i = 0; i < length; i++)
-    {
-        
         printInstruct(out, instruction_read(bf), i * BYTES_PER_WORD);
-    }
 }
 
-// prints the instructions with two spaces
+// prints the PC and instructions with two spaces
 void printInstruct(FILE *out, bin_instr_t bi, unsigned int i)
 {
     fprintf(out, "  %3d %s", i, instruction_assembly_form(bi));
     newline(out);
 }
 
+// This will print the bottom stuff
 void printData(FILE *out, BOFFILE bf, BOFHeader bh)
 {
     int length = bh.data_length / BYTES_PER_WORD;
@@ -53,9 +54,10 @@ void printData(FILE *out, BOFFILE bf, BOFHeader bh)
     while (length > 0)
     {
         fprintf(out, "   %u: %d\t", num, bof_read_word(bf));
-        num += 4;
+        num += 4; // Always increment by four
         length--;
     }
+    // reached the end, print default
     fprintf(out, "%u: 0 ...", num);
     newline(out);
 }
@@ -71,13 +73,13 @@ int main(int argc, char *arg[])
 
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for tracing
     {
-        printf("***Working On TRACING (.myo/.out)***\n");
+        printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[2]); // Reading the bof file and storing a file pointer to bf
         trace(bf); 
     }
     else // if no -p then print output
     {
-        printf("***Working On OUTPUT (.myp/.lst)***\n");
+        printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[1]); 
         printOut(stdout, bf);
     }
@@ -88,3 +90,6 @@ int main(int argc, char *arg[])
 
 // To Compile
 // gcc -o vm vm.c bof.c utilities.c instruction.c regname.c machine_types.c
+
+// Only the ./vm vm_test#.bof function works
+// the ./vm -p vm_test#.bof function doesn't exist yet
