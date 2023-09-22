@@ -39,34 +39,25 @@ void printText(FILE *out, BOFFILE bf, BOFHeader bh)
     }
 }
 
-// prints the instructions with three spaces
+// prints the instructions with two spaces
 void printInstruct(FILE *out, bin_instr_t bi, unsigned int i)
 {
-    fprintf(out, "   %d %s", i, instruction_assembly_form(bi));
+    fprintf(out, "  %3d %s", i, instruction_assembly_form(bi));
     newline(out);
 }
 
 void printData(FILE *out, BOFFILE bf, BOFHeader bh)
 {
-    fprintf(out, " %u:", bh.data_start_address);
-    dataDec(out, bf, bh.data_length / BYTES_PER_WORD);
-}
-
-void dataDec(FILE *out, BOFFILE bf, int length)
-{
+    int length = bh.data_length / BYTES_PER_WORD;
+    unsigned int num = bh.data_start_address;
     while (length > 0)
     {
-        printDataDec(out, bof_read_word(bf));
+        fprintf(out, "   %u: %d\t", num, bof_read_word(bf));
+        num += 4;
         length--;
     }
-}
-
-void printDataDec(FILE *out, word_type w)
-{
-    if (w > 0)
-        fprintf(out, "%d", w);
-    else
-        fprintf(out, "0");
+    fprintf(out, "%u: 0 ...", num);
+    newline(out);
 }
 
 // *************************************************************************
@@ -90,16 +81,6 @@ int main(int argc, char *arg[])
         bf = bof_read_open(arg[1]); 
         printOut(stdout, bf);
     }
-    BOFHeader bfh = bof_read_header(bf);
-    printf("Text Start Address = %u\n",bfh.text_start_address); // Is always 0?
-    printf("Text Length = %u\n",bfh.text_length); // This will be the pc + 4, look at vm_test#.lst
-    printf("Data Start Address = %u\n",bfh.data_start_address); 
-    printf("Data Length = %u\n",bfh.data_start_address);
-    printf("Stack Bottom Addr = %u\n",bfh.stack_bottom_addr); // Is always 4096?
-
-    printf("\n*******************************************************************\n");
-
-
 
     bof_close(bf); // Done with bof file so close it
     return 0;
