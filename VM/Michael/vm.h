@@ -6,13 +6,13 @@
 #include "instruction.h"
 #include "bof.h"
 
-// For -p Tracing
+// For Tracing
 void trace(BOFFILE bf);
 
 // ****************************************************************
 
 // ****************************************************************
-// For Output
+// For -p Output
 void printOut(FILE *out, BOFFILE bf);
 void printText(FILE *out, BOFFILE bf, BOFHeader bh);
 void printInstructHelper(FILE *out, BOFFILE bf, int length);

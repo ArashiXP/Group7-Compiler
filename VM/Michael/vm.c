@@ -71,17 +71,17 @@ int main(int argc, char *arg[])
 
     BOFFILE bf; // Store the bof file somewhere
 
-    if (strcmp(arg[1], "-p") == 0) // Uses -p option for tracing
-    {
-        printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
-        bf = bof_read_open(arg[2]); // Reading the bof file and storing a file pointer to bf
-        trace(bf); 
-    }
-    else // if no -p then print output
+    if (strcmp(arg[1], "-p") == 0) // Uses -p option for output
     {
         printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
-        bf = bof_read_open(arg[1]); 
+        bf = bof_read_open(arg[2]); // Reading the bof file and storing a file pointer to bf
         printOut(stdout, bf);
+    }
+    else // if no -p then print trace
+    {
+        printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
+        bf = bof_read_open(arg[1]); 
+        trace(bf); 
     }
 
     bof_close(bf); // Done with bof file so close it
