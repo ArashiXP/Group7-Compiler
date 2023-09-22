@@ -91,5 +91,5 @@ int main(int argc, char *arg[])
 // To Compile
 // gcc -o vm vm.c bof.c utilities.c instruction.c regname.c machine_types.c
 
-// Only the ./vm vm_test#.bof function works
-// the ./vm -p vm_test#.bof function doesn't exist yet
+// Only the ./vm -p vm_test#.bof function works
+// the ./vm vm_test#.bof function doesn't exist yet
