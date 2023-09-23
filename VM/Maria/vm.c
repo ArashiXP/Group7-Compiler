@@ -53,38 +53,24 @@ void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i)
     // $sp = stack pointer, $fp frame pointer, $gp data pointer
     for (int j = 0; j < NUM_REGISTERS; j++)
     {
-        // EX: addr: ADDI $0, $t0, 1
-        // I tried to split this string and then if we arrive at the GPR[$t0],
-        // I would add the 1 to the register changing it to GPR[$t0]: 1
-        // as seen in the vm_test0.out
-
-        /*if (strstr(instruction_assembly_form(bi), regname_get(j)))
-        {
-            char *token = strtok(instr, "$");
-            while (token != NULL)
-            {
-                fprintf(out, "++++++TOKEN: %s++++++", token);
-                token = strtok(NULL, "$");
-                if (strcmp(token, regname_get(j)))
-                {
-                    token = strtok(NULL, "$");
-                    fprintf(out, "GPR[%s]: %s   ", regname_get(j), token);
-                    break;
-                }
-            }
-        }
+        /*
+        That is, the caller must save registers 1 − 15, and 24 − 25 if they will be needed after a call (and then
+            restores them when needed).
+        The callee saves (and restores before it returns) registers 16 − 23 and 29 − 31, if it uses (writes) them.
+        (Furthermore, register 0 cannot be changed and registers 1 and 28 should not be changed by a hand-
+            written routine. Registers 26 − 27 should not be changed by user code.)
         */
 
         // cleans output to add a new line after every 6 fprints
         if (j % 6 == 0)
             newline(out);
 
-        // regname function belongd to regname.h
+        // regname function belongs to regname.h
 
-        // assigns GPR[$fp]
+        // assigns GPR[$fp] (register 30)
         if (strcmp("$fp", regname_get(j)) == 0)
             fprintf(out, "GPR[%s]: %u   ", regname_get(j), bh.stack_bottom_addr);
-        // assigns GPR[$gp]
+        // assigns GPR[$gp] (register 28)
         else if (strcmp("$gp", regname_get(j)) == 0)
             fprintf(out, "GPR[%s]: %u   ", regname_get(j), bh.data_start_address);
         else
