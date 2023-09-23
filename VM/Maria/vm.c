@@ -41,7 +41,6 @@ void trace(FILE *out, BOFFILE bf)
 
     // printf("TESTS");
     newline(out);
-    newline(out);
 }
 
 // takes "care" of the general purpose register
