@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.31 2023/09/22 01:29:49 leavens Exp $
+# $Id: Makefile,v 1.32 2023/09/22 20:16:39 leavens Exp $
 # Makefile for PL/0 compiler and code generation
 
 # Add .exe to the end of target to get that suffix in the rules
@@ -17,9 +17,10 @@ VM_OBJECTS = machine_main.o machine.o \
              regname.o utilities.o 
 SOURCESLIST = `echo $(VM_OBJECTS) | sed -e 's/\\.o/.c/g'`
 TESTSOURCES = vm_test0.asm vm_test1.asm vm_test2.asm \
-		vm_test3.asm vm_test4.asm vm_test5.asm
+		vm_test3.asm vm_test4.asm vm_test5.asm vm_test6.asm \
+		vm_test7.asm
 TESTS = vm_test0.bof vm_test1.bof vm_test2.bof vm_test3.bof \
-	vm_test4.bof vm_test5.bof
+	vm_test4.bof vm_test5.bof vm_test6.bof vm_test7.bof
 EXPECTEDOUTPUTS = $(TESTS:.bof=.out)
 EXPECTEDLISTINGS = $(TESTS:.bof=.lst)
 # STUDENTESTOUTPUTS is all of the .myo files corresponding to the tests
@@ -65,10 +66,10 @@ clean:
 
 # main target for testing
 .PHONY: check-outputs
-check-outputs: $(VM) $(ASM) $(TESTS) check-asm-outputs check-vm-outputs 
+check-outputs: $(VM) $(ASM) $(TESTS) check-lst-outputs check-vm-outputs 
 	@echo 'Be sure to look for two test summaries above (listings and execution)'
 
-check-asm-outputs:
+check-lst-outputs check-asm-outputs:
 	DIFFS=0; \
 	for f in `echo $(TESTS) | sed -e 's/\\.bof//g'`; \
 	do \
