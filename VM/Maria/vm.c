@@ -14,48 +14,50 @@
 // ***************************For Tracing**********************************
 void trace(FILE *out, BOFFILE bf)
 {
-    /*OUPUT
-        PC: 4 (Program counter)
-        GPR[$0 ]: 0 GPR[$at]: 0 GPR[$v0]: 0 GPR[$v1]: 0 (General Purpose Register)
-        1024: 0 ... (data start address)
-        4096: 0 (stack data)
-        ==> addr: 0 STRA (this is the instruction_read)
-    */
+    printTracing(out, bf);
+}
+
+// Prints '-p' command
+void printTracing(FILE *out, BOFFILE bf)
+{
     int i = 0;
     BOFHeader bh = bof_read_header(bf);
     int length = (bh.text_length / BYTES_PER_WORD);
     for (i = 0; i < length; i++)
     {
+        // displays program counter
         fprintf(out, "  PC = %d", i * BYTES_PER_WORD);
         newline(out);
+        // displays General Purpose Register Table
         GPR(out, bf, bh, i);
-        // newline(out);
-        // fprintf(out, "==> addr: ");
-        //  printInstruct(out, instruction_read(bf), i * BYTES_PER_WORD);
-        // newline(out);
+
+        // byte numbers at the end of GPR table
         fprintf(out, "  %u: ", bh.data_start_address); // 1024
         newline(out);
         fprintf(out, "  %u:", bh.stack_bottom_addr); // 4096
         newline(out);
     }
-
-    // printf("TESTS");
-    newline(out);
 }
 
-// takes "care" of the general purpose register
-void GPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i)
+// Prints GPR table and addr
+void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i)
 {
     // need to get the string containting the instructions in assempbly form
-    bin_instr_t bi = instruction_read(bf);
+    bin_instr_t bi = instruction_read(bf); // reads instruction in binary form
     int length = strlen(instruction_assembly_form(bi));
     char *instr = malloc(sizeof(char) * (length + 1));
+    // copying the instruction since the function returns it in constant form
     instr = strcpy(instr, instruction_assembly_form(bi));
 
     // GPR STUFF GOES HERE
     // $sp = stack pointer, $fp frame pointer, $gp data pointer
     for (int j = 0; j < NUM_REGISTERS; j++)
     {
+        // EX: addr: ADDI $0, $t0, 1
+        // I tried to split this string and then if we arrive at the GPR[$t0],
+        // I would add the 1 to the register changing it to GPR[$t0]: 1
+        // as seen in the vm_test0.out
+
         /*if (strstr(instruction_assembly_form(bi), regname_get(j)))
         {
             char *token = strtok(instr, "$");
@@ -72,19 +74,25 @@ void GPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i)
             }
         }
         */
+
+        // cleans output to add a new line after every 6 fprints
         if (j % 6 == 0)
             newline(out);
 
-        // this is not working properly
+        // regname function belongd to regname.h
+
+        // assigns GPR[$fp]
         if (strcmp("$fp", regname_get(j)) == 0)
             fprintf(out, "GPR[%s]: %u   ", regname_get(j), bh.stack_bottom_addr);
+        // assigns GPR[$gp]
         else if (strcmp("$gp", regname_get(j)) == 0)
             fprintf(out, "GPR[%s]: %u   ", regname_get(j), bh.data_start_address);
         else
-            fprintf(out, "GPR[%s]: 0   ", regname_get(j)); // just a test
+            fprintf(out, "GPR[%s]: 0   ", regname_get(j)); // "base" case
     }
     newline(out);
     fprintf(out, "==> addr: ");
+    // displays assembly instruction
     printInstruct(out, bi, i);
 }
 // *************************************************************************
@@ -158,3 +166,5 @@ int main(int argc, char *arg[])
     bof_close(bf); // Done with bof file so close it
     return 0;
 }
+
+// gcc -o vm vm.c bof.c utilities.c instruction.c regname.c machine_types.c
