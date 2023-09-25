@@ -26,7 +26,7 @@ Still need to implement a jump function and actually do the math with the regist
 ~~possible~~
 
 **9-25-23**<br>
-- Added the JMP and JAL functions
+- Added the JMP and JAL functions (Though may not be complete yet)
 - Updated the Vm header
 - Fixed improper function calls
 - Changed the code to accept 2 arrays, one that holds all the instructions and one for
