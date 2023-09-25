@@ -7,7 +7,9 @@
 #include "bof.h"
 
 // For Tracing
-void trace(BOFFILE bf);
+void trace(FILE *out, BOFFILE bf);
+void printTracing(FILE *out, BOFFILE bf);
+void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i);
 
 // ****************************************************************
 
