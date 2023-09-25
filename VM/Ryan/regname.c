@@ -1,5 +1,6 @@
 // $Id: regname.c,v 1.1 2023/09/15 15:08:01 leavens Exp $
 #include "regname.h"
+#include <string.h>
 
 static const char *regnames[NUM_REGISTERS] = {
     "$0", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
@@ -12,4 +13,12 @@ static const char *regnames[NUM_REGISTERS] = {
 const char *regname_get(int n)
 {
     return regnames[n];
+}
+
+int regindex_get(char * input)
+{
+    for (int i = 0; i < 32; i++) {
+        if (strcmp(input, regnames[i]) == 0) return i;
+    }
+    return 0;
 }
