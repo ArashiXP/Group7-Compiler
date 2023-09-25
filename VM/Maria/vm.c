@@ -29,7 +29,7 @@ void printTracing(FILE *out, BOFFILE bf)
         fprintf(out, "  PC = %d", i * BYTES_PER_WORD);
         newline(out);
         // displays General Purpose Register Table
-        GPR(out, bf, bh, i);
+        printGPR(out, bf, bh, i);
 
         // byte numbers at the end of GPR table
         fprintf(out, "  %u: ", bh.data_start_address); // 1024
@@ -138,15 +138,14 @@ int main(int argc, char *arg[])
 
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for tracing
     {
-        printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
-        bf = bof_read_open(arg[2]);                       // Reading the bof file and storing a file pointer to bf
-        trace(stdout, bf);
+        bf = bof_read_open(arg[2]); // Reading the bof file and storing a file pointer to bf
+        printOut(stdout, bf);
     }
     else // if no -p then print output
     {
-        printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
+        printf("***Working On TRACING(.myp/.lst)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[1]);
-        printOut(stdout, bf);
+        trace(stdout, bf);
     }
 
     bof_close(bf); // Done with bof file so close it
