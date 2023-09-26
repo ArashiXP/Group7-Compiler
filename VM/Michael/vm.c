@@ -89,6 +89,7 @@ void trace(FILE *out, BOFFILE bf)
         free(instr[i]);
     free(instr);
     free(data);
+    free(GPR);
 }
 
 // Prints non '-p' command
