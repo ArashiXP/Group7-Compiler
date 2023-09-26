@@ -1,4 +1,4 @@
-// Michael Nguyen
+// Ryan Latour
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +14,6 @@
 // Make sure to delete all print statements that aren't necessary
 // Fix the formatting
 
-// ***************************HELPER FUNCTIONS*****************************
 // This is to store all of the instructions so we can access them easier
 char** instructionList (BOFHeader bh, BOFFILE bf)
 {
@@ -50,66 +49,37 @@ int* dataList(BOFFILE bf, BOFHeader bh)
     return data;
 }
 
-int regindex_get(char * input)
-{
-    for (int i = 0; i < 32; i++)
-        if (strcmp(input, regname_get(i)) == 0) return i;
-    return 0;
-}
-
-int* makeRegister(BOFHeader bh)
-{
-    int* registers = malloc(NUM_REGISTERS * sizeof(int));
-    for (int i = 0; i < NUM_REGISTERS; i++)
-    {
-        if (i == 28)
-            registers[i] = bh.data_start_address;
-        else if (i == 29)
-            registers[i] = bh.stack_bottom_addr;
-        else if (i == 30)
-            registers[i] = bh.stack_bottom_addr;
-        else
-            registers[i] = 0;
-    }
-
-    return registers;
-}
-
-// *************************************************************************
-
-// ***************************For Tracing***********************************
-void trace(FILE *out, BOFFILE bf)
+// ***************************For Tracing**********************************
+void trace(FILE *out, BOFFILE bf, int registerArray[32])
 {
     BOFHeader bh = bof_read_header(bf); // read the header
     char **instr = instructionList(bh, bf); // Array to hold instructions
     int *data = dataList(bf, bh); //Array to hold the numbers at the bottom 1024: 33 ...
-    int* GPR = makeRegister(bh); // Array to hold the registers
-
-    printTracing(out, bf, bh, instr, data, GPR);
+    printTracing(out, bf, bh, instr, data, registerArray);
 
     // Free everything
     for (int i = 0; i < bh.text_length / BYTES_PER_WORD; i++)
         free(instr[i]);
     free(instr);
     free(data);
-    free(GPR);
 }
 
+
 // Prints non '-p' command
-void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data, int* GPR)
+void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data, int registerArray[32])
 {
+    bin_instr_t bi; // Hold the instruction
+    BOFFILE temp = bf; // Keep a copy of the bf, so we don't iterate it
     bool NOTR = false; // At the start we set NOTR to false until we find one
     char *instr = malloc(120 * sizeof(char));
     char *token[120]; 
     int length = (bh.text_length / BYTES_PER_WORD);
 
-    int rs, rt, rd, immed, shift; // Indexes
-    int LO, HI;
-    LO = 0;
-    HI = 0;
+    int rs, rt, rd, immediate; // Indexes
 
     for (int i = 0; i < length; i++)
-    {
+    {   
+
         strcpy(instr, instruct[i]);
         int index = 0;
 
@@ -124,12 +94,10 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         // If NOTR is true we skip until we find a STRA
         if (NOTR) continue;
 
-        // displays program counter and HI and LO if the aren't zero
+        // displays program counter
         fprintf(out, "      PC: %d", i * BYTES_PER_WORD);
-        if (HI != 0) fprintf(out,"\tHI: %d", HI);
-        if (LO != 0) fprintf(out,"\tLO: %d",LO);
         // displays General Purpose Register Table
-        printGPR(out, GPR);
+        printGPR(out, bf, bh, i * BYTES_PER_WORD, bi, registerArray);
 
         if (i != length)
         { 
@@ -149,137 +117,56 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         printInstruct(out, i * BYTES_PER_WORD, instruct[i]);
 
         // This is to split the instruction into separate parts to get the jump address
-        token[index] = strtok(instr, " \t"); // splits if it sees a space or a tab(\t) or comma
+        token[index] = strtok(instr, " \t"); // splits if it sees a space or a tab(\t)
         while (token[index] != NULL)
-            token[++index] = strtok(NULL, " \t,");
+            token[++index] = strtok(NULL, " \t");
 
-        //ADD GPR[rd] <- GPR[rs] + GPR[rt]
-        if (strcmp(token[0], "ADD") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            rd = regindex_get(token[3]);
+        
+        // ADD
+        if (strcmp(token[0], "ADD") == 0) {
+            rd = regindex_get(token[1]);
+            rs = regindex_get(token[2]);
+            rt = regindex_get(token[3]);
 
-            GPR[rd] = GPR[rs] + GPR[rt];
-        }
-        // ADDI GPR[rt] <- GPR[rs] + Immediate
-        else if (strcmp(token[0], "ADDI") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            immed = atoi(token[3]);
-            GPR[rt] = GPR[rs] + immed;
+            registerArray[rd] = registerArray[rs] + registerArray[rt];
         }
 
-        // SUB GPR[rd] <- GPR[rs] - GPR[rt]
-        else if (strcmp(token[0], "SUB") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            rd = regindex_get(token[3]);
-            GPR[rd] = GPR[rs] - GPR[rt];
+        // SUB
+        if (strcmp(token[0], "SUB") == 0) {
+            rd = regindex_get(token[1]);
+            rs = regindex_get(token[2]);
+            rt = regindex_get(token[3]);
+
+            registerArray[rd] = registerArray[rs] - registerArray[rt];
         }
 
-        // AND GPR[rd] <- GPR[rs] & GPR[rt]
-        else if (strcmp(token[0], "AND") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            rd = regindex_get(token[3]);
-            GPR[rd] = GPR[rs] & GPR[rt];
-        }
-
-        // ANDI GPR[rd] <- GPR[rs] & Immed
-        else if (strcmp(token[0], "ANDI") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            immed = atoi(token[3]);
-            GPR[rd] = GPR[rs] & immed;
-        }
-
-        // OR/BOR GPR[rd] <- GPR[rs] | GPR[rt]
-        else if (strcmp(token[0], "BOR") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            rd = regindex_get(token[3]);
-            GPR[rd] = GPR[rs] | GPR[rt];
-        }
-
-        // BORI GPR[rd] <- GPR[rs] | Immed
-        else if (strcmp(token[0], "BORI") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            immed = atoi(token[3]);
-            GPR[rd] = GPR[rs] | immed;
-        }
-
-        // XOR GPR[rd] <- GPR[rs] ^ GPR[rt]
-        else if (strcmp(token[0], "XOR") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            rd = regindex_get(token[3]);
-            GPR[rd] = GPR[rs] ^ GPR[rt];
-        }
-
-        // XORI GPR[rd] <- GPR[rs] ^ Immed
-        else if (strcmp(token[0], "XORI") == 0)
-        {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            immed = atoi(token[3]);
-            GPR[rd] = GPR[rs] ^ immed;
-        }
-
-        //SLL GPR[rd] <- GPR[rs] << shift
-        else if (strcmp(token[0], "SLL") == 0)
-        {
+        // ADDI
+        if (strcmp(token[0], "ADDI") == 0) {
             rt = regindex_get(token[1]);
-            rd = regindex_get(token[2]);
-            shift = atoi(token[3]);
+            rs = regindex_get(token[2]); 
+            immediate = atoi(token[3]); // Convert to int and keep sign extended
 
-            GPR[rd] = GPR[rt] << shift;
-        }
-
-        //SRL GPR[rd] <- GPR[rs] >> shift
-        else if (strcmp(token[0], "SRL") == 0)
-        {
-            rt = regindex_get(token[1]);
-            rd = regindex_get(token[2]);
-            shift = atoi(token[3]);
-
-            GPR[rd] = GPR[rt] >> shift;
+            rt = rs + immediate;
         }
 
         // Jump function
         // if the command is JMP or JAL we take the second token (the number) and jump to that
-        else if (strcmp(token[0], "JMP") == 0 || strcmp(token[0], "JAL") == 0)
+        if (strcmp(token[0], "JMP") == 0 || strcmp(token[0], "JAL") == 0)
         {
             // Convert the string into an int
             int jmpNum = atoi(token[1]);
             i = jmpNum - 1; // Must sub one because i will be incremented in next iteration
         }
-
-        // May not be safe yet
-        // JR PC <- GPR[rs]
-        // else if (strcmp(token[0], "JR") == 0)
-        // {
-        //     rs = regindex_get(token[1]);
-        //     i = (GPR[rs] / 4) - 1;
-        // }
         
         // If there is an exit, we stop with no return
-        else if (strcmp(instruct[i], "EXIT") == 32) return;
+        if (strcmp(instruct[i], "EXIT") == 32) return;
     }
 
     free(instr);
 }
 
 // Prints GPR table and addr
-void printGPR(FILE *out, int* GPR)
+void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i, bin_instr_t bi, int memoryArray[32])
 {
     // GPR STUFF GOES HERE
     // $sp = stack pointer, $fp frame pointer, $gp data pointer
@@ -299,8 +186,19 @@ void printGPR(FILE *out, int* GPR)
 
         // regname function belongs to regname.h
 
-        fprintf(out, "GPR[%-3s]: %d\t", regname_get(j), GPR[j]);
+        // assigns GPR[$fp] (register 30)
+        if (strcmp("$fp", regname_get(j)) == 0)
+            fprintf(out, "GPR[%s]: %u\t", regname_get(j), bh.stack_bottom_addr);
+        // assigns GPR[$gp] (register 28)
+        else if (strcmp("$gp", regname_get(j)) == 0)
+            fprintf(out, "GPR[%s]: %u\t", regname_get(j), bh.data_start_address);
+        // assigns GPR[$sp] (register 29)
+        else if (strcmp("$sp", regname_get(j)) == 0)
+            fprintf(out, "GPR[%s]: %u\t", regname_get(j), bh.stack_bottom_addr);
+        else
+            fprintf(out, "GPR[%-3s]: %d\t", regname_get(j), memoryArray[j]); // "base" case
     }
+    newline(out);
 }
 // *************************************************************************
 
@@ -369,6 +267,12 @@ int main(int argc, char *arg[])
 
     BOFFILE bf; // Store the bof file somewhere
 
+    // Create register array
+    int registerArray[32]; // 32 registers, each one aligning with regname.h
+    for (int i = 0; i < 32; i++) { // Initialize with 0
+        registerArray[i] = 0;
+    }
+
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for output
     {
         printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
@@ -379,7 +283,7 @@ int main(int argc, char *arg[])
     {
         printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[1]);
-        trace(stdout, bf); 
+        trace(stdout, bf, registerArray); 
     }
     
     bof_close(bf); // Done with bof file so close it

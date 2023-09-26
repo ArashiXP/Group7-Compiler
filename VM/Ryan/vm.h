@@ -8,12 +8,11 @@
 
 char** instructionList (BOFHeader bh, BOFFILE bf);
 int* dataList(BOFFILE bf, BOFHeader bh);
-int* makeRegister(BOFHeader bh);
 
 // For Tracing
 void trace(FILE *out, BOFFILE bf);
-void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data, int* GPR);
-void printGPR(FILE *out, int* GPR);
+void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data);
+void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i, bin_instr_t bi);
 
 // ****************************************************************
 
