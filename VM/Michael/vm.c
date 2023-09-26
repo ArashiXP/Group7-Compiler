@@ -104,6 +104,9 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
     int length = (bh.text_length / BYTES_PER_WORD);
 
     int rs, rt, rd, immed, shift; // Indexes
+    int LO, HI;
+    LO = 0;
+    HI = 0;
 
     for (int i = 0; i < length; i++)
     {
@@ -121,8 +124,10 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         // If NOTR is true we skip until we find a STRA
         if (NOTR) continue;
 
-        // displays program counter
+        // displays program counter and HI and LO if the aren't zero
         fprintf(out, "      PC: %d", i * BYTES_PER_WORD);
+        if (HI != 0) fprintf(out,"\tHI: %d", HI);
+        if (LO != 0) fprintf(out,"\tLO: %d",LO);
         // displays General Purpose Register Table
         printGPR(out, GPR);
 

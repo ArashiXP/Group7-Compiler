@@ -37,6 +37,7 @@ Still need to implement a jump function and actually do the math with the regist
 - Finished the ADD, ADDI, SUB functions and got it to display on the GPR
 - Added AND ANDI XOR XORI BOR BORI SLL SRL
 - Made changes to the MAKEFILE so we can use it to complile
+- Add HI and LO to be shown if they aren't zero
 
 With the 2 arrays, The one that holds all the instructions is 2D because it is a Array of strings and 
 the other just holds the bottom ints.
