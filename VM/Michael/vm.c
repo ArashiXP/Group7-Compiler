@@ -105,7 +105,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
     char *token[120]; 
     int length = (bh.text_length / BYTES_PER_WORD);
 
-    int rs, rt, rd, immed; // Indexes
+    int rs, rt, rd, immed, shift; // Indexes
 
     for (int i = 0; i < length; i++)
     {
@@ -150,8 +150,17 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         while (token[index] != NULL)
             token[++index] = strtok(NULL, " \t,");
 
+        //ADD GPR[rd] <- GPR[rs] + GPR[rt]
+        if (strcmp(token[0], "ADD") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            rd = regindex_get(token[3]);
+
+            GPR[rd] = GPR[rs] + GPR[rt];
+        }
         // ADDI GPR[rt] <- GPR[rs] + Immediate
-        if (strcmp(token[0], "ADDI") == 0)
+        else if (strcmp(token[0], "ADDI") == 0)
         {
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
@@ -159,35 +168,108 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             GPR[rt] = GPR[rs] + immed;
         }
 
-        //ADD GPR[rd] <- GPR[rs] + GPR[rt]
-        if (strcmp(token[0], "ADD") == 0) {
-            rs = regindex_get(token[1]);
-            rt = regindex_get(token[2]);
-            rd = regindex_get(token[3]);
-
-            GPR[rd] = GPR[rs] + GPR[rt];
-
-        }
-
         // SUB GPR[rd] <- GPR[rs] - GPR[rt]
-        if (strcmp(token[0], "SUB") == 0) {
+        else if (strcmp(token[0], "SUB") == 0)
+        {
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
             rd = regindex_get(token[3]);
             GPR[rd] = GPR[rs] - GPR[rt];
         }
 
+        // AND GPR[rd] <- GPR[rs] & GPR[rt]
+        else if (strcmp(token[0], "AND") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            rd = regindex_get(token[3]);
+            GPR[rd] = GPR[rs] & GPR[rt];
+        }
+
+        // ANDI GPR[rd] <- GPR[rs] & Immed
+        else if (strcmp(token[0], "ANDI") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            GPR[rd] = GPR[rs] & immed;
+        }
+
+        // OR/BOR GPR[rd] <- GPR[rs] | GPR[rt]
+        else if (strcmp(token[0], "BOR") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            rd = regindex_get(token[3]);
+            GPR[rd] = GPR[rs] | GPR[rt];
+        }
+
+        // BORI GPR[rd] <- GPR[rs] | Immed
+        else if (strcmp(token[0], "BORI") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            GPR[rd] = GPR[rs] | immed;
+        }
+
+        // XOR GPR[rd] <- GPR[rs] ^ GPR[rt]
+        else if (strcmp(token[0], "XOR") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            rd = regindex_get(token[3]);
+            GPR[rd] = GPR[rs] ^ GPR[rt];
+        }
+
+        // XORI GPR[rd] <- GPR[rs] ^ Immed
+        else if (strcmp(token[0], "XORI") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            GPR[rd] = GPR[rs] ^ immed;
+        }
+
+        //SLL GPR[rd] <- GPR[rs] << shift
+        else if (strcmp(token[0], "SLL") == 0)
+        {
+            rt = regindex_get(token[1]);
+            rd = regindex_get(token[2]);
+            shift = atoi(token[3]);
+
+            GPR[rd] = GPR[rt] << shift;
+        }
+
+        //SRL GPR[rd] <- GPR[rs] >> shift
+        else if (strcmp(token[0], "SRL") == 0)
+        {
+            rt = regindex_get(token[1]);
+            rd = regindex_get(token[2]);
+            shift = atoi(token[3]);
+
+            GPR[rd] = GPR[rt] >> shift;
+        }
+
         // Jump function
         // if the command is JMP or JAL we take the second token (the number) and jump to that
-        if (strcmp(token[0], "JMP") == 0 || strcmp(token[0], "JAL") == 0)
+        else if (strcmp(token[0], "JMP") == 0 || strcmp(token[0], "JAL") == 0)
         {
             // Convert the string into an int
             int jmpNum = atoi(token[1]);
             i = jmpNum - 1; // Must sub one because i will be incremented in next iteration
         }
+
+        // May not be safe yet
+        // JR PC <- GPR[rs]
+        // else if (strcmp(token[0], "JR") == 0)
+        // {
+        //     rs = regindex_get(token[1]);
+        //     i = (GPR[rs] / 4) - 1;
+        // }
         
         // If there is an exit, we stop with no return
-        if (strcmp(instruct[i], "EXIT") == 32) return;
+        else if (strcmp(instruct[i], "EXIT") == 32) return;
     }
 
     free(instr);

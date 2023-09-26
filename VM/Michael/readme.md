@@ -35,6 +35,7 @@ Still need to implement a jump function and actually do the math with the regist
   need to worry
 - Fixed the prior bug that I crossed out above
 - Finished the ADD, ADDI, SUB functions and got it to display on the GPR
+- Added AND ANDI XOR XORI BOR BORI SLL SRL
 
 With the 2 arrays, The one that holds all the instructions is 2D because it is a Array of strings and 
 the other just holds the bottom ints.
