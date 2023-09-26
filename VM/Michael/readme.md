@@ -18,7 +18,7 @@ and eventually make it produce a .myp file since it just prints to terminal
 
 Still need to implement a jump function and actually do the math with the registers.
 
-~~I commented out the printData() function in print tracing cause it does a ~~
+~~I commented out the printData() function in print tracing cause it does a~~
 ~~weird number bug~~
 ~~but it is needed to do the 1028 1024 ... stuff~~
 ~~uncomment it out and run the test to see for yourself I'll try to fix it~~
@@ -34,6 +34,7 @@ Still need to implement a jump function and actually do the math with the regist
 - Made two functions to get the two arrays, I implemented it into the functions so no
   need to worry
 - Fixed the prior bug that I crossed out above
+- Finished the ADD, ADDI, SUB functions and got it to display on the GPR
 
 With the 2 arrays, The one that holds all the instructions is 2D because it is a Array of strings and 
 the other just holds the bottom ints.
@@ -45,17 +46,16 @@ In printTracing there is a little block of code that has the comment __This is t
 That is to take a string, for example the instruction and split it into individual parts and
 stores into an array I called token
 
-SUB $a0, $a1, $v0
-__Becomes__
-["SUB, $a0, $a1, $v0"]
+SUB $a0, $a1, $v0 <br>
+__Becomes__ <br>
+["SUB, $a0, $a1, $v0"] <br>
 
-This could help you or could not, idk.
+This could help you or could not, idk.<br>
 
 We still need to implement math and whatnot, there are so many functions left that we have to tackle as well as the ranoom letters at the bottom of some of the tests, and HI LO 
 stuff
 
-Currently taking a break, I will probably keep working later today so please check back on this for further fixes I do. 
-Message me if you are confused on what I did, it looks like a mess I know.
+
 
 
 to compile use, also make sure you have the vm.h file

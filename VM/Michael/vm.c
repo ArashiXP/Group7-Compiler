@@ -49,13 +49,40 @@ int* dataList(BOFFILE bf, BOFHeader bh)
     return data;
 }
 
+int regindex_get(char * input)
+{
+    for (int i = 0; i < 32; i++)
+        if (strcmp(input, regname_get(i)) == 0) return i;
+    return 0;
+}
+
+int* makeRegister(BOFHeader bh)
+{
+    int* registers = malloc(NUM_REGISTERS * sizeof(int));
+    for (int i = 0; i < NUM_REGISTERS; i++)
+    {
+        if (i == 28)
+            registers[i] = bh.data_start_address;
+        else if (i == 29)
+            registers[i] = bh.stack_bottom_addr;
+        else if (i == 30)
+            registers[i] = bh.stack_bottom_addr;
+        else
+            registers[i] = 0;
+    }
+
+    return registers;
+}
+
 // ***************************For Tracing**********************************
 void trace(FILE *out, BOFFILE bf)
 {
     BOFHeader bh = bof_read_header(bf); // read the header
     char **instr = instructionList(bh, bf); // Array to hold instructions
     int *data = dataList(bf, bh); //Array to hold the numbers at the bottom 1024: 33 ...
-    printTracing(out, bf, bh, instr, data);
+    int* GPR = makeRegister(bh); // Array to hold the registers
+
+    printTracing(out, bf, bh, instr, data, GPR);
 
     // Free everything
     for (int i = 0; i < bh.text_length / BYTES_PER_WORD; i++)
@@ -65,7 +92,7 @@ void trace(FILE *out, BOFFILE bf)
 }
 
 // Prints non '-p' command
-void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data)
+void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data, int* GPR)
 {
     bin_instr_t bi; // Hold the instruction
     BOFFILE temp = bf; // Keep a copy of the bf, so we don't iterate it
@@ -73,6 +100,14 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
     char *instr = malloc(120 * sizeof(char));
     char *token[120]; 
     int length = (bh.text_length / BYTES_PER_WORD);
+
+    // // Create register array
+    // int registerArray[32]; // 32 registers, each one aligning with regname.h
+    // for (int i = 0; i < 32; i++) // Initialize with 0
+    //     registerArray[i] = 0;
+
+    int rs, rt, rd, immed; // Indexes
+
     for (int i = 0; i < length; i++)
     {
         strcpy(instr, instruct[i]);
@@ -92,7 +127,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         // displays program counter
         fprintf(out, "      PC: %d", i * BYTES_PER_WORD);
         // displays General Purpose Register Table
-        printGPR(out, bf, bh, i * BYTES_PER_WORD, bi);
+        printGPR(out, GPR);
 
         if (i != length)
         { 
@@ -112,9 +147,36 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         printInstruct(out, i * BYTES_PER_WORD, instruct[i]);
 
         // This is to split the instruction into separate parts to get the jump address
-        token[index] = strtok(instr, " \t"); // splits if it sees a space or a tab(\t)
+        token[index] = strtok(instr, " \t"); // splits if it sees a space or a tab(\t) or comma
         while (token[index] != NULL)
-            token[++index] = strtok(NULL, " \t");
+            token[++index] = strtok(NULL, " \t,");
+
+        // ADDI GPR[rt] <- GPR[rs] + Immediate
+        if (strcmp(token[0], "ADDI") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            GPR[rt] = GPR[rs] + immed;
+        }
+
+        //ADD GPR[rd] <- GPR[rs] + GPR[rt]
+        if (strcmp(token[0], "ADD") == 0) {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            rd = regindex_get(token[3]);
+
+            GPR[rd] = GPR[rs] + GPR[rt];
+
+        }
+
+        // SUB GPR[rd] <- GPR[rs] - GPR[rt]
+        if (strcmp(token[0], "SUB") == 0) {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            rd = regindex_get(token[3]);
+            GPR[rd] = GPR[rs] - GPR[rt];
+        }
 
         // Jump function
         // if the command is JMP or JAL we take the second token (the number) and jump to that
@@ -133,7 +195,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
 }
 
 // Prints GPR table and addr
-void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i, bin_instr_t bi)
+void printGPR(FILE *out, int* GPR)
 {
     // GPR STUFF GOES HERE
     // $sp = stack pointer, $fp frame pointer, $gp data pointer
@@ -153,19 +215,8 @@ void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i, bin_instr_t b
 
         // regname function belongs to regname.h
 
-        // assigns GPR[$fp] (register 30)
-        if (strcmp("$fp", regname_get(j)) == 0)
-            fprintf(out, "GPR[%s]: %u\t", regname_get(j), bh.stack_bottom_addr);
-        // assigns GPR[$gp] (register 28)
-        else if (strcmp("$gp", regname_get(j)) == 0)
-            fprintf(out, "GPR[%s]: %u\t", regname_get(j), bh.data_start_address);
-        // assigns GPR[$sp] (register 29)
-        else if (strcmp("$sp", regname_get(j)) == 0)
-            fprintf(out, "GPR[%s]: %u\t", regname_get(j), bh.stack_bottom_addr);
-        else
-            fprintf(out, "GPR[%-3s]: 0\t", regname_get(j)); // "base" case
+        fprintf(out, "GPR[%-3s]: %d\t", regname_get(j), GPR[j]);
     }
-    newline(out);
 }
 // *************************************************************************
 
