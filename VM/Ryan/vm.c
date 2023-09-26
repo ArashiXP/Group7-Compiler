@@ -50,12 +50,12 @@ int* dataList(BOFFILE bf, BOFHeader bh)
 }
 
 // ***************************For Tracing**********************************
-void trace(FILE *out, BOFFILE bf)
+void trace(FILE *out, BOFFILE bf, int registerArray[32])
 {
     BOFHeader bh = bof_read_header(bf); // read the header
     char **instr = instructionList(bh, bf); // Array to hold instructions
     int *data = dataList(bf, bh); //Array to hold the numbers at the bottom 1024: 33 ...
-    printTracing(out, bf, bh, instr, data);
+    printTracing(out, bf, bh, instr, data, registerArray);
 
     // Free everything
     for (int i = 0; i < bh.text_length / BYTES_PER_WORD; i++)
@@ -66,7 +66,7 @@ void trace(FILE *out, BOFFILE bf)
 
 
 // Prints non '-p' command
-void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data)
+void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data, int registerArray[32])
 {
     bin_instr_t bi; // Hold the instruction
     BOFFILE temp = bf; // Keep a copy of the bf, so we don't iterate it
@@ -75,12 +75,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
     char *token[120]; 
     int length = (bh.text_length / BYTES_PER_WORD);
 
-    // Create register array
-    int registerArray[32]; // 32 registers, each one aligning with regname.h
-    for (int i = 0; i < 32; i++) { // Initialize with 0
-        registerArray[i] = 0;
-    }
-    int rs, rt, rd; // Indexes
+    int rs, rt, rd, immediate; // Indexes
 
     for (int i = 0; i < length; i++)
     {   
@@ -102,7 +97,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         // displays program counter
         fprintf(out, "      PC: %d", i * BYTES_PER_WORD);
         // displays General Purpose Register Table
-        printGPR(out, bf, bh, i * BYTES_PER_WORD, bi);
+        printGPR(out, bf, bh, i * BYTES_PER_WORD, bi, registerArray);
 
         if (i != length)
         { 
@@ -145,6 +140,15 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             registerArray[rd] = registerArray[rs] - registerArray[rt];
         }
 
+        // ADDI
+        if (strcmp(token[0], "ADDI") == 0) {
+            rt = regindex_get(token[1]);
+            rs = regindex_get(token[2]); 
+            immediate = atoi(token[3]); // Convert to int and keep sign extended
+
+            rt = rs + immediate;
+        }
+
         // Jump function
         // if the command is JMP or JAL we take the second token (the number) and jump to that
         if (strcmp(token[0], "JMP") == 0 || strcmp(token[0], "JAL") == 0)
@@ -162,7 +166,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
 }
 
 // Prints GPR table and addr
-void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i, bin_instr_t bi)
+void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i, bin_instr_t bi, int memoryArray[32])
 {
     // GPR STUFF GOES HERE
     // $sp = stack pointer, $fp frame pointer, $gp data pointer
@@ -192,7 +196,7 @@ void printGPR(FILE *out, BOFFILE bf, BOFHeader bh, unsigned int i, bin_instr_t b
         else if (strcmp("$sp", regname_get(j)) == 0)
             fprintf(out, "GPR[%s]: %u\t", regname_get(j), bh.stack_bottom_addr);
         else
-            fprintf(out, "GPR[%-3s]: 0\t", regname_get(j)); // "base" case
+            fprintf(out, "GPR[%-3s]: %d\t", regname_get(j), memoryArray[j]); // "base" case
     }
     newline(out);
 }
@@ -263,6 +267,12 @@ int main(int argc, char *arg[])
 
     BOFFILE bf; // Store the bof file somewhere
 
+    // Create register array
+    int registerArray[32]; // 32 registers, each one aligning with regname.h
+    for (int i = 0; i < 32; i++) { // Initialize with 0
+        registerArray[i] = 0;
+    }
+
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for output
     {
         printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
@@ -273,7 +283,7 @@ int main(int argc, char *arg[])
     {
         printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[1]);
-        trace(stdout, bf); 
+        trace(stdout, bf, registerArray); 
     }
     
     bof_close(bf); // Done with bof file so close it
