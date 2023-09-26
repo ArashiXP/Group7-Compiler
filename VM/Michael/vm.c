@@ -14,6 +14,7 @@
 // Make sure to delete all print statements that aren't necessary
 // Fix the formatting
 
+// ***************************HELPER FUNCTIONS*****************************
 // This is to store all of the instructions so we can access them easier
 char** instructionList (BOFHeader bh, BOFFILE bf)
 {
@@ -74,7 +75,9 @@ int* makeRegister(BOFHeader bh)
     return registers;
 }
 
-// ***************************For Tracing**********************************
+// *************************************************************************
+
+// ***************************For Tracing***********************************
 void trace(FILE *out, BOFFILE bf)
 {
     BOFHeader bh = bof_read_header(bf); // read the header
@@ -101,11 +104,6 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
     char *instr = malloc(120 * sizeof(char));
     char *token[120]; 
     int length = (bh.text_length / BYTES_PER_WORD);
-
-    // // Create register array
-    // int registerArray[32]; // 32 registers, each one aligning with regname.h
-    // for (int i = 0; i < 32; i++) // Initialize with 0
-    //     registerArray[i] = 0;
 
     int rs, rt, rd, immed; // Indexes
 
