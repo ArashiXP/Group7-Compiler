@@ -98,8 +98,6 @@ void trace(FILE *out, BOFFILE bf)
 // Prints non '-p' command
 void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* data, int* GPR)
 {
-    bin_instr_t bi; // Hold the instruction
-    BOFFILE temp = bf; // Keep a copy of the bf, so we don't iterate it
     bool NOTR = false; // At the start we set NOTR to false until we find one
     char *instr = malloc(120 * sizeof(char));
     char *token[120]; 
