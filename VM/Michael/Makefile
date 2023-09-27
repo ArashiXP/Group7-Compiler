@@ -85,13 +85,30 @@ check-lst-outputs check-asm-outputs:
 		echo 'Some listing test(s) failed!'; \
 	fi
 
+# check-vm-outputs:
+# 	DIFFS=0; \
+# 	for f in `echo $(TESTS) | sed -e 's/\\.bof//g'`; \
+# 	do \
+# 		echo running "$$f.bof" in the VM ...; \
+# 		./vm "$$f.bof" > "$$f.myo" 2>&1; \
+# 		diff -w -B "$$f.out" "$$f.myo" && echo 'passed!' \
+# 			|| { echo 'failed!'; DIFFS=1; }; \
+# 	done; \
+# 	if test 0 = $$DIFFS; \
+# 	then \
+# 		echo 'All VM execution tests passed!'; \
+# 	else \
+# 		echo 'Some VM execution test(s) failed!'; \
+# 	fi
+
+# dont show diff
 check-vm-outputs:
 	DIFFS=0; \
 	for f in `echo $(TESTS) | sed -e 's/\\.bof//g'`; \
 	do \
 		echo running "$$f.bof" in the VM ...; \
 		./vm "$$f.bof" > "$$f.myo" 2>&1; \
-		diff -w -B "$$f.out" "$$f.myo" && echo 'passed!' \
+		diff -w -B -qs "$$f.out" "$$f.myo" && echo 'passed!' \
 			|| { echo 'failed!'; DIFFS=1; }; \
 	done; \
 	if test 0 = $$DIFFS; \
