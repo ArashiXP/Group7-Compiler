@@ -7,9 +7,6 @@
 #include "regname.h"
 #include "vm.h"
 
-#define MEMORY_SIZE_IN_BYTES (65536 - BYTES_PER_WORD)
-#define BITS sizeof(int) * 8
-
 // Reminders
 // Make sure to delete all print statements that aren't necessary
 // Fix the formatting
@@ -44,12 +41,15 @@ int *dataList(BOFFILE bf, BOFHeader bh)
     {
         data[i] = bof_read_word(bf);
         length--;
+        memory.gp[i] = data[i];
+        memory.sp[i] = 0;
         i++;
     }
 
     return data;
 }
 
+// This gets the index of the register passed
 int regindex_get(char *input)
 {
     for (int i = 0; i < 32; i++)
@@ -58,6 +58,7 @@ int regindex_get(char *input)
     return 0;
 }
 
+// Makes a basic Register and fills in necessary numbers
 int *makeRegister(BOFHeader bh)
 {
     int *registers = malloc(NUM_REGISTERS * sizeof(int));
@@ -74,6 +75,67 @@ int *makeRegister(BOFHeader bh)
     }
 
     return registers;
+}
+
+// The VM enforces the following invariants and will halt with an error message (written to stderr) if one of
+// them is violated
+bool checkInvariants(int *GPR, int i)
+{
+    int PC = i * BYTES_PER_WORD;
+
+    // PC % BYTES_PER_WORD = 0
+    if (PC % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "PC %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$gp] % BYTES_PER_WORD = 0,
+    if (GPR[regindex_get("$gp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$gp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$sp] % BYTES_PER_WORD = 0
+    if (GPR[regindex_get("$sp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$sp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$fp] % BYTES_PER_WORD = 0
+    if (GPR[regindex_get("$fp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$fp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // 0 ≤ GPR[$gp]
+
+    // GPR[$gp] < GPR[$sp]
+
+    // GPR[$sp] ≤ GPR[$fp]
+
+    // GPR[$fp] < MAX_STACK_HEIGHT
+
+    // 0 ≤ PC
+
+    // PC < MEMORY_SIZE_IN_BYTES
+
+    // GPR[0] = 0
+    if (GPR[0] != 0)
+    {
+        fprintf(stderr, "Wrong call to register 0");
+        newline(stderr);
+        return true;
+    }
+
+    return false;
 }
 
 // *************************************************************************
@@ -114,43 +176,41 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
         strcpy(instr, instruct[i]);
         int index = 0;
 
-        // This is fufill the NOTR and STRA Command
-        // if NOTR we stop until we get a STRA
-        // if STRA isn't given we go until the program terminates
+        // STRA start tracing
         if (strcmp(instruct[i], "STRA") == 32 && i != 0)
         {
             NOTR = false;
             continue;
         }
-        // If NOTR is true we skip until we find a STRA
-        if (NOTR)
-            continue;
-
-        // displays program counter and HI and LO if the aren't zero
-        fprintf(out, "      PC: %d", i * BYTES_PER_WORD);
-        if (HI != 0)
-            fprintf(out, "\tHI: %d", HI);
-        if (LO != 0)
-            fprintf(out, "\tLO: %d", LO);
-        // displays General Purpose Register Table
-        printGPR(out, GPR);
-
-        if (i != length)
+        // If NOTR is true we stop tracing until we find a STRA
+        // But still do commands
+        if (!NOTR)
         {
-            // So we don't display this for the final call
-            // byte numbers at the end of GPR table
-            printData(out, bh, bh.data_length / BYTES_PER_WORD, data);
-            fprintf(out, "    %u: 0 ...", bh.stack_bottom_addr); // 4096
-            newline(out);
+            // displays program counter and HI and LO if the aren't zero
+            fprintf(out, "      PC: %d", i * BYTES_PER_WORD);
+            if (HI != 0 || LO != 0)
+                fprintf(out, "\tHI: %d\tLO: %d", HI, LO);
+            // displays General Purpose Register Table
+            printGPR(out, GPR);
+            if (i != length)
+            {
+                // So we don't display this for the final call
+                // byte numbers at the end of GPR table
+                printData(out, bh, bh.data_length / BYTES_PER_WORD, data);
+                fprintf(out, "    %u: 0 ...", bh.stack_bottom_addr); // 4096
+                newline(out);
+            }
+
+            fprintf(out, "==> addr: ");
+            // displays assembly instruction
+            printInstruct(out, i * BYTES_PER_WORD, instruct[i]);
+            if (checkInvariants(GPR, i))
+                return;
         }
 
-        // The instruction is NOTR so we set it to True
+        // NOTR stop tracing
         if (strcmp(instruct[i], "NOTR") == 32)
             NOTR = true;
-
-        fprintf(out, "==> addr: ");
-        // displays assembly instruction
-        printInstruct(out, i * BYTES_PER_WORD, instruct[i]);
 
         // This is to split the instruction into separate parts to get the jump address
         token[index] = strtok(instr, " \t"); // splits if it sees a space or a tab(\t) or comma
@@ -173,6 +233,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             GPR[rt] = GPR[rs] + immed;
+            // invariant tests
         }
 
         // SUB GPR[rd] <- GPR[rs] - GPR[rt]
@@ -258,7 +319,6 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             GPR[rd] = GPR[rt] >> shift;
         }
 
-        //+++++++++++++++++NEW ONES++++++++++++++++++++++++++++
         // NOR GPR[d] ← ¬(GPR[s] ∨ GPR[t])
         else if (strcmp(token[0], "NOR") == 0)
         {
@@ -274,8 +334,8 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
             int num = GPR[rs] * GPR[rt];
-            HI = (num & 0x0000FFFF); // gets msb
-            LO = (num & 0xFFFF0000); // gets lsb
+            LO = (num & 0x0000FFFF); // gets msb
+            HI = (num & 0xFFFF0000); // gets lsb
         }
 
         // MFLO GPR[d] ← LO
@@ -303,8 +363,10 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
                 fprintf(stderr, "Division by 0");
             }
             else
+            {
                 LO = GPR[rs] / GPR[rt];
-            HI = GPR[rs] % GPR[rt];
+                HI = GPR[rs] % GPR[rt];
+            }
         }
 
         // BEQ if GPR[s] = GPR[t] then PC ← PC + formOffset(o)
@@ -314,9 +376,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (GPR[rs] == GPR[rt])
-            {
                 i += machine_types_sgnExt(immed);
-            }
         }
 
         // BGEZ if GPR[s] ≥ 0 then PC ← PC + formOffset(o)
@@ -325,9 +385,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             rs = regindex_get(token[1]);
             immed = atoi(token[2]);
             if (GPR[rs] >= 0)
-            {
                 i += machine_types_sgnExt(immed);
-            }
         }
 
         // BGTZ if GPR[s] ≥ 0 then PC ← PC + formOffset(o)
@@ -336,9 +394,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             rs = regindex_get(token[1]);
             immed = atoi(token[2]);
             if (GPR[rs] > 0)
-            {
                 i += machine_types_sgnExt(immed);
-            }
         }
 
         // BLEZ if GPR[s] ≥ 0 then PC ← PC + formOffset(o)
@@ -347,20 +403,16 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             rs = regindex_get(token[1]);
             immed = atoi(token[2]);
             if (GPR[rs] <= 0)
-            {
                 i += machine_types_sgnExt(immed);
-            }
         }
 
         // BLTZ if GPR[s] ≥ 0 then PC ← PC + formOffset(o)
-        else if (strcmp(token[0], "BLEZ") == 0)
+        else if (strcmp(token[0], "BLTZ") == 0)
         {
             rs = regindex_get(token[1]);
             immed = atoi(token[2]);
             if (GPR[rs] < 0)
-            {
                 i += machine_types_sgnExt(immed);
-            }
         }
 
         // BNE if GPR[s] ≥ 0 then PC ← PC + formOffset(o)
@@ -370,15 +422,10 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (GPR[rs] != GPR[rt])
-            {
                 i += machine_types_sgnExt(immed);
-            }
         }
 
-        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-        // Jump function
-        // if the command is JMP or JAL we take the second token (the number) and jump to that
+        // JMP PC <- a
         else if (strcmp(token[0], "JMP") == 0)
         {
             // Convert the string into an int
@@ -386,21 +433,87 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
             i = jmpNum - 1; // Must sub one because i will be incremented in next iteration
         }
 
-        // JAL GPR[$ra] ← PC; PC ← formAddress(PC, a)
+        // JAL PC <- a and GPR[$ra] = PC + 4
         else if (strcmp(token[0], "JAL") == 0)
         {
-            int addr = atoi(token[1]);
-            i = addr - 1;
-            GPR[regindex_get("$ra")] = i * BYTES_PER_WORD;
+            GPR[regindex_get("$ra")] = i * BYTES_PER_WORD + BYTES_PER_WORD;
+            i = (machine_types_formAddress(i, atoi(token[1])) / BYTES_PER_WORD) - 1;
         }
 
-        // May not be safe yet
         // JR PC <- GPR[rs]
-        // else if (strcmp(token[0], "JR") == 0)
-        // {
-        //     rs = regindex_get(token[1]);
-        //     i = (GPR[rs] / 4) - 1;
-        // }
+        else if (strcmp(token[0], "JR") == 0)
+        {
+            rs = regindex_get(token[1]);
+            i = (GPR[rs] / BYTES_PER_WORD) - 1;
+        }
+
+        // PCH GPR[$v0] <- printf("%d", GPR[$a0]);
+        // Prints out the letter version of whatever is in GPR[$a0]
+        // We don't want a new line because the output only has one when PCH prints \n
+        else if (strcmp(token[0], "PCH") == 0)
+        {
+            fprintf(out, "%c", GPR[regindex_get("$a0")]);
+        }
+
+        // IDK if this works or not
+        // RCH GPR[$v0] <- getc(stdin)
+        else if (strcmp(token[0], "RCH") == 0)
+        {
+            GPR[regindex_get("$v0")] = getc(stdin);
+        }
+
+        // LBU LW SB SW aren't functional but the general format is correct
+        // NEED TO IMPLEMENT MEMORY BETTER
+
+        // LW
+        // The way i did the memory here is definitely wrong
+        else if (strcmp(token[0], "LW") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            if (rs == regindex_get("$gp"))
+                GPR[rt] = memory.gp[machine_types_sgnExt(immed)];
+            else if (rs == regindex_get("$sp"))
+                GPR[rt] = memory.sp[machine_types_sgnExt(immed)];
+        }
+
+        // LBU
+        else if (strcmp(token[0], "LBU") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            if (rs == regindex_get("$gp"))
+                GPR[rt] = machine_types_zeroExt(memory.gp[machine_types_sgnExt(immed)]);
+            else if (rs == regindex_get("$sp"))
+                GPR[rt] = machine_types_zeroExt(memory.sp[machine_types_sgnExt(immed)]);
+        }
+
+        // SB
+        // IDK how this is supposed to be done, but this is my attempt
+        else if (strcmp(token[0], "SB") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            if (rs == regindex_get("$gp"))
+                memory.gp[machine_types_sgnExt(immed)] = GPR[rt] & 1;
+            else if (rs == regindex_get("$sp"))
+                memory.sp[machine_types_sgnExt(immed)] = GPR[rt] & 1;
+        }
+
+        // SW
+        else if (strcmp(token[0], "SW") == 0)
+        {
+            rs = regindex_get(token[1]);
+            rt = regindex_get(token[2]);
+            immed = atoi(token[3]);
+            if (rs == regindex_get("$gp"))
+                memory.gp[machine_types_sgnExt(immed)] = GPR[rt];
+            else if (rs == regindex_get("$sp"))
+                memory.sp[machine_types_sgnExt(immed)] = GPR[rt];
+        }
 
         // If there is an exit, we stop with no return
         else if (strcmp(instruct[i], "EXIT") == 32)
@@ -410,7 +523,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *dat
     free(instr);
 }
 
-// Prints GPR table and addr
+// Prints GPR table
 void printGPR(FILE *out, int *GPR)
 {
     // GPR STUFF GOES HERE
@@ -428,11 +541,9 @@ void printGPR(FILE *out, int *GPR)
         // cleans output to add a new line after every 6 fprints
         if (j % 6 == 0)
             newline(out);
-
-        // regname function belongs to regname.h
-
         fprintf(out, "GPR[%-3s]: %d\t", regname_get(j), GPR[j]);
     }
+    newline(out);
 }
 // *************************************************************************
 
@@ -479,7 +590,7 @@ void printData(FILE *out, BOFHeader bh, int length, int *data)
     while (length > 0)
     {
         // line break when there are five on a line
-        if (i % 5 == 0)
+        if (i % 5 == 0 && i != 0)
             newline(out);
 
         fprintf(out, "    %u: %d\t", num, data[i]);
