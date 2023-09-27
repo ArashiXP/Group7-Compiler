@@ -1,4 +1,4 @@
-// Michael Nguyen
+// Ryan Latour
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -131,14 +131,14 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
                 fprintf(out,"\tHI: %d\tLO: %d", HI, LO);
             // displays General Purpose Register Table
             printGPR(out, GPR);
-            if (i != length)
+            /*if (i != length)
             { 
                 // So we don't display this for the final call
                 // byte numbers at the end of GPR table
                 printData(out, bh, bh.data_length / BYTES_PER_WORD, data);
                 fprintf(out, "    %u: 0 ...", bh.stack_bottom_addr); // 4096
                 newline(out);
-            }
+            }*/
 
             fprintf(out, "==> addr: ");
             // displays assembly instruction
@@ -479,6 +479,22 @@ void printGPR(FILE *out, int* GPR)
             newline(out);
         fprintf(out, "GPR[%-3s]: %d\t", regname_get(j), GPR[j]);
     }
+    newline(out);
+
+    // * PRINT MEMORY *
+    // NEED TO DO GLOBAL
+
+    // Stack print
+    int line = 0;
+    for (int i = GPR[SP]; i <= GPR[FP]; i = i + 4) { // Iterate from stack pointer to frame pointer
+        if (line % 6 == 0 && line > 0) // cleans output to add a new line after every 6 fprints
+            newline(out);
+
+        fprintf(out, "\t%d: %d", i, memory.sp[i]); // Prints "  [address]: [value]"
+
+        line ++;
+    }
+    fprintf(out, " ...");
     newline(out);
 }
 // *************************************************************************
