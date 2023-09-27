@@ -41,9 +41,9 @@ int* dataList(BOFFILE bf, BOFHeader bh)
     while (length > 0)
     {
         data[i] = bof_read_word(bf);
-        length--;
-        memory.gp[i] = data[i];
         memory.sp[i] = 0;
+        memory.gp[i] = data[i];
+        length--;
         i++;
     }
 
@@ -406,13 +406,14 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         // The way i did the memory here is definitely wrong
         else if (strcmp(token[0], "LW") == 0)
         {
-            rs = regindex_get(token[1]);
+            rs = regindex_get(token[1]);;
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (rs == regindex_get("$gp"))
                 GPR[rt] = memory.gp[machine_types_sgnExt(immed)];
             else if (rs == regindex_get("$sp"))
                 GPR[rt] = memory.sp[machine_types_sgnExt(immed)];
+            printf("Stored: %d\n", memory.gp[machine_types_sgnExt(immed)]);
         }
 
         // LBU
