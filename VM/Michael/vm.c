@@ -475,7 +475,6 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
                 GPR[rt] = memory.gp[machine_types_sgnExt(immed)];
             else if (rs == regindex_get("$sp"))
                 GPR[rt] = memory.sp[machine_types_sgnExt(immed)];
-            printf("Stored: %d\n", memory.gp[machine_types_sgnExt(immed)]);
         }
 
         // LBU
@@ -613,13 +612,11 @@ int main(int argc, char *arg[])
 
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for output
     {
-        printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[2]); // Reading the bof file and storing a file pointer to bf
         printOut(stdout, bf);
     }
     else // if no -p then print trace
     {
-        printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[1]);
         trace(stdout, bf); 
     }
