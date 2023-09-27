@@ -77,6 +77,67 @@ int* makeRegister(BOFHeader bh)
     return registers;
 }
 
+// The VM enforces the following invariants and will halt with an error message (written to stderr) if one of
+// them is violated
+bool checkInvariants(int *GPR, int i)
+{
+    int PC = i * BYTES_PER_WORD;
+
+    // PC % BYTES_PER_WORD = 0
+    if (PC % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "PC %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$gp] % BYTES_PER_WORD = 0,
+    if (GPR[regindex_get("$gp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$gp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$sp] % BYTES_PER_WORD = 0
+    if (GPR[regindex_get("$sp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$sp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$fp] % BYTES_PER_WORD = 0
+    if (GPR[regindex_get("$fp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$fp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // 0 ≤ GPR[$gp]
+
+    // GPR[$gp] < GPR[$sp]
+
+    // GPR[$sp] ≤ GPR[$fp]
+
+    // GPR[$fp] < MAX_STACK_HEIGHT
+
+    // 0 ≤ PC
+
+    // PC < MEMORY_SIZE_IN_BYTES
+
+    // GPR[0] = 0
+    if (GPR[0] != 0)
+    {
+        fprintf(stderr, "Wrong call to register 0");
+        newline(stderr);
+        return true;
+    }
+
+    return false;
+}
+
 // *************************************************************************
 
 // ***************************For Tracing***********************************
@@ -143,6 +204,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             fprintf(out, "==> addr: ");
             // displays assembly instruction
             printInstruct(out, i * BYTES_PER_WORD, instruct[i]);
+            if (checkInvariants(GPR, i)) return;
         }
 
         // NOTR stop tracing

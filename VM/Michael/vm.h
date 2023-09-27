@@ -18,6 +18,7 @@ char** instructionList (BOFHeader bh, BOFFILE bf);
 int* dataList(BOFFILE bf, BOFHeader bh);
 int* makeRegister(BOFHeader bh);
 int regindex_get(char * input);
+bool checkInvariants(int *GPR, int i);
 
 // For Tracing
 void trace(FILE *out, BOFFILE bf);
