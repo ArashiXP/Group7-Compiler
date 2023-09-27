@@ -116,16 +116,46 @@ bool checkInvariants(int *GPR, int i)
     }
 
     // 0 ≤ GPR[$gp]
+    if (!(0 <= GPR[regindex_get("%gp")]))
+    {
+        fprintf(stderr, "0 ≤ GPR[$gp]");
+        newline(stderr);
+        return true;
+    }
 
     // GPR[$gp] < GPR[$sp]
+    if (!(GPR[regindex_get("%gp")] < GPR[regindex_get("%sp")]))
+    {
+        fprintf(stderr, "GPR[$sp] >= GPR[$gp]");
+        newline(stderr);
+        return true;
+    }
 
     // GPR[$sp] ≤ GPR[$fp]
+    if (!(GPR[regindex_get("%sp")] <= GPR[regindex_get("%fp")]))
+    {
+        fprintf(stderr, "GPR[$fp] >= GPR[$sp]");
+        newline(stderr);
+        return true;
+    }
 
     // GPR[$fp] < MAX_STACK_HEIGHT
 
     // 0 ≤ PC
+    if (!(0 <= PC))
+    {
+        fprintf(stderr, "PC >= 0");
+        newline(stderr);
+        return true;
+    }
 
     // PC < MEMORY_SIZE_IN_BYTES
+    if (!(PC < MEMORY_SIZE_IN_BYTES))
+    {
+        fprintf(stderr, "PC not less than MEMORY_SIZE_IN_BYTES");
+        newline(stderr);
+        return true;
+    }
 
     // GPR[0] = 0
     if (GPR[0] != 0)
@@ -614,13 +644,11 @@ int main(int argc, char *arg[])
 
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for output
     {
-        printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
-        bf = bof_read_open(arg[2]);                      // Reading the bof file and storing a file pointer to bf
+        bf = bof_read_open(arg[2]); // Reading the bof file and storing a file pointer to bf
         printOut(stdout, bf);
     }
     else // if no -p then print trace
     {
-        printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[1]);
         trace(stdout, bf);
     }
