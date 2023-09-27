@@ -56,6 +56,7 @@ This could help you or could not, idk.<br>
 
 **9-26-23**<br>
 - Fixed a few bugs with existing commands
+- Updated the header
 - Made changes to the MAKEFILE so we can use it to complile
 - Add HI and LO to be shown if they aren't zero
 - Implemented JR PCH RCH (Sort of RCH idk how to test it)
@@ -65,6 +66,7 @@ This could help you or could not, idk.<br>
   the commands
 - Adjusted formatting bugs
 - Moved around blocks of code to look better
+- Made a union for the memory
 - Made sort of commands for LBU, LW, SB, SW but they don't fully work for all test cases<br>
 - Started implementing MEMORY but it doesn't look very correct it's needed for LBU, LW, SB,<br>
   SW, PSTR
