@@ -36,8 +36,6 @@ Still need to implement a jump function and actually do the math with the regist
 - Fixed the prior bug that I crossed out above
 - Finished the ADD, ADDI, SUB functions and got it to display on the GPR
 - Added AND ANDI XOR XORI BOR BORI SLL SRL
-- Made changes to the MAKEFILE so we can use it to complile
-- Add HI and LO to be shown if they aren't zero
 
 With the 2 arrays, The one that holds all the instructions is 2D because it is a Array of strings and 
 the other just holds the bottom ints.
@@ -55,8 +53,30 @@ __Becomes__ <br>
 
 This could help you or could not, idk.<br>
 
-We still need to implement math and whatnot, there are so many functions left that we have to tackle as well as the ranoom letters at the bottom of some of the tests, and HI LO 
-stuff
+
+**9-26-23**<br>
+- Fixed a few bugs with existing commands
+- Made changes to the MAKEFILE so we can use it to complile
+- Add HI and LO to be shown if they aren't zero
+- Implemented JR PCH RCH (Sort of RCH idk how to test it)
+- The PCH command prints the words that were confusing before so that has been addressed, but I think <br>
+  of the professors tests cases (test case 5) is wrong because the code skips over the Y
+- Fixed how NOTR and STRA worked, I thought it stopped until STRA, but it stops tracking but still does<br>
+  the commands
+- Adjusted formatting bugs
+- Moved around blocks of code to look better
+- Made sort of commands for LBU, LW, SB, SW but they don't fully work for all test cases<br>
+- Started implementing MEMORY but it doesn't look very correct it's needed for LBU, LW, SB,<br>
+  SW, PSTR
+
+I need help fixing the memory, I have no real idea what's going on but here is what I put as a placeholder<br>
+
+So The LW SW and all of them usually only get stored into the $gp or the $sp<br>
+The $gp stores all of the words at the bottom which I copied into the memory.gp array<br>
+The $sp stores other stuff so it just exists<br>
+So I have a global union inside of the VM header which can just be called whenever, no need to pass it<br>
+and if you look at the commands near the bottom of the printTrace() function, you'll see my crazy attempt<br>
+I'm just at a loss honestly on how to do it<br>
 
 
 to compile use, also make sure you have the vm.h file
