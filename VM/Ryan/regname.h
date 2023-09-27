@@ -12,7 +12,5 @@
 // requires 0 <= n && n < NUM_REGISTERS
 // Return the standard symbolic name for n
 extern const char *regname_get(int n);
-
-extern int regindex_get(char * input);
 #endif
 
