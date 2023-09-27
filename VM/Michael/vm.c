@@ -587,6 +587,7 @@ void printData(FILE *out, BOFHeader bh, int length, int* data)
     int i = 0; // To help with indenting
     while (length > 0)
     {
+        if (data[i] == 0) break; 
         // line break when there are five on a line
         if (i % 5 == 0 && i != 0)
             newline(out);
