@@ -410,9 +410,9 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (rs == regindex_get("$gp"))
-                GPR[rt] = memory.gp[machine_types_sgnExt(immed)];
+                GPR[rt] = memory.gp[GPR[GP] + machine_types_sgnExt(immed)];
             else if (rs == regindex_get("$sp"))
-                GPR[rt] = memory.sp[machine_types_sgnExt(immed)];
+                GPR[rt] = memory.sp[GPR[SP] + machine_types_sgnExt(immed)];
         }
 
         // LBU
@@ -422,9 +422,9 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (rs == regindex_get("$gp"))
-                GPR[rt] = machine_types_zeroExt(memory.gp[machine_types_sgnExt(immed)]);
+                GPR[rt] = machine_types_zeroExt(GPR[GP] + memory.gp[machine_types_sgnExt(immed)]);
             else if (rs == regindex_get("$sp"))
-                GPR[rt] = machine_types_zeroExt(memory.sp[machine_types_sgnExt(immed)]);
+                GPR[rt] = machine_types_zeroExt(GPR[SP] + memory.sp[machine_types_sgnExt(immed)]);
         }
 
         // SB
@@ -435,9 +435,9 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (rs == regindex_get("$gp"))
-                memory.gp[machine_types_sgnExt(immed)] = GPR[rt] & 1;
+                memory.gp[GPR[GP] + machine_types_sgnExt(immed)] = GPR[rt] & 1;
             else if (rs == regindex_get("$sp"))
-                memory.sp[machine_types_sgnExt(immed)] = GPR[rt] & 1;
+                memory.sp[GPR[SP] + machine_types_sgnExt(immed)] = GPR[rt] & 1;
         }
 
         // SW
@@ -447,9 +447,9 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (rs == regindex_get("$gp"))
-                memory.gp[machine_types_sgnExt(immed)] = GPR[rt];
+                memory.gp[GPR[GP] + machine_types_sgnExt(immed)] = GPR[rt];
             else if (rs == regindex_get("$sp"))
-                memory.sp[machine_types_sgnExt(immed)] = GPR[rt];
+                memory.sp[GPR[SP] + machine_types_sgnExt(immed)] = GPR[rt];
         }
 
         // If there is an exit, we stop with no return

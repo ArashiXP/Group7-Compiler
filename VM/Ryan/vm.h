@@ -7,6 +7,10 @@
 #include "bof.h"
 
 #define MEMORY_SIZE_IN_BYTES (65536 - BYTES_PER_WORD)
+// Pointer constants
+#define GP 28
+#define SP 29
+#define FP 30
 
 union Memory
 {
