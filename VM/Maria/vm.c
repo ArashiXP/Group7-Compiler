@@ -116,7 +116,7 @@ bool checkInvariants(int *GPR, int i)
     }
 
     // 0 ≤ GPR[$gp]
-    if (!(0 <= GPR[regindex_get("%gp")]))
+    if (!(0 <= GPR[regindex_get("$gp")]))
     {
         fprintf(stderr, "0 ≤ GPR[$gp]");
         newline(stderr);
@@ -124,17 +124,17 @@ bool checkInvariants(int *GPR, int i)
     }
 
     // GPR[$gp] < GPR[$sp]
-    if (!(GPR[regindex_get("%gp")] < GPR[regindex_get("%sp")]))
+    if (!(GPR[regindex_get("$gp")] < GPR[regindex_get("$sp")]))
     {
-        fprintf(stderr, "GPR[$sp] >= GPR[$gp]");
+        fprintf(stderr, "GPR[$gp] < GPR[$sp]");
         newline(stderr);
         return true;
     }
 
     // GPR[$sp] ≤ GPR[$fp]
-    if (!(GPR[regindex_get("%sp")] <= GPR[regindex_get("%fp")]))
+    if (!(GPR[regindex_get("$sp")] <= GPR[regindex_get("$fp")]))
     {
-        fprintf(stderr, "GPR[$fp] >= GPR[$sp]");
+        fprintf(stderr, "GPR[$sp] ≤ GPR[$fp]");
         newline(stderr);
         return true;
     }
