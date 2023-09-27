@@ -6,15 +6,24 @@
 #include "instruction.h"
 #include "bof.h"
 
-char **
-instructionList(BOFHeader bh, BOFFILE bf);
+#define MEMORY_SIZE_IN_BYTES (65536 - BYTES_PER_WORD)
+
+union Memory
+{
+    int gp[MEMORY_SIZE_IN_BYTES];
+    int sp[MEMORY_SIZE_IN_BYTES];
+} memory;
+
+char **instructionList(BOFHeader bh, BOFFILE bf);
 int *dataList(BOFFILE bf, BOFHeader bh);
 int *makeRegister(BOFHeader bh);
+int regindex_get(char *input);
 
 // For Tracing
 void trace(FILE *out, BOFFILE bf);
 void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char **instruct, int *data, int *GPR);
 void printGPR(FILE *out, int *GPR);
+bool checkInvariants(int *GPR, int i);
 
 // ****************************************************************
 
