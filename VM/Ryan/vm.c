@@ -594,11 +594,33 @@ void printOut(FILE *out, BOFFILE bf)
     printText(out, bf, bh, instructions);
     //printData(out, bh, bh.data_length / BYTES_PER_WORD, data, GPR);
     
+    int length = bh.data_length / BYTES_PER_WORD;
+    int * GPR = makeRegister(bh);
+    buildGlobal(bf, bh, GPR);
+    
+    // Memory print
+    int line  = 0;
+    for (int i = GPR[GP]; i <= GPR[GP] + (4 * length); i = i + 4) {
+      if (line % 5 == 0 && line > 0) // cleans output to add a new line after every 6 fprints
+            newline(out);
+            
+      if (memory.sp[i] == 0 && memory.sp[i - 4] == 0 && i != GPR[GP]) continue;
+            
+      fprintf(out, "    %d: %d	", i, memory.sp[i]); // Prints "     [address]: [value]\t"
+      
+      if (memory.sp[i] == 0) fprintf(out, " ...");
+      line ++;
+    }
+    
+    newline(out);
+    
+    
     // Free everything
     for (int i = 0; i < bh.text_length / BYTES_PER_WORD; i++)
         free(instructions[i]);
     free(instructions);
     free(data);
+    free(GPR);
 }
 
 // Print the title and first half of the output
