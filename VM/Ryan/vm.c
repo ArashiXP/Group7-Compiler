@@ -40,13 +40,20 @@ int* dataList(BOFFILE bf, BOFHeader bh)
     int i = 0;
     while (length > 0)
     {
-        data[i] = bof_read_word(bf);
-        memory.sp[i] = data[i];
+        //data[i] = bof_read_word(bf);
+        //memory.sp[i] = data[i];
         length--;
         i++;
     }
 
     return data;
+}
+
+// Actually fills up memory
+void buildGlobal(BOFFILE bf, BOFHeader bh, int * GPR) {
+    int length = bh.data_length / BYTES_PER_WORD;
+    
+    for (int i = GPR[GP]; i < GPR[GP] + (length * 4); i = i + 4) memory.sp[i] = bof_read_word(bf);
 }
 
 // This gets the index of the register passed
@@ -176,6 +183,8 @@ void trace(FILE *out, BOFFILE bf)
     char **instr = instructionList(bh, bf); // Array to hold instructions
     int *data = dataList(bf, bh); //Array to hold the numbers at the bottom 1024: 33 ...
     int* GPR = makeRegister(bh); // Array to hold the registers
+    
+    buildGlobal(bf, bh, GPR);
 
     printTracing(out, bf, bh, instr, data, GPR);
 
@@ -360,9 +369,12 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         {
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
+            
             int num = GPR[rs] * GPR[rt];
-            LO = (num & 0x0000FFFF); // gets msb
-            HI = (num & 0xFFFF0000); // gets lsb
+            //fprintf(out, "%d", num);
+            LO = (num & 0x000000FF); // gets msb
+            HI = (num & 0xFFFFFF00); // gets lsb
+            
         }
 
         // MFLO GPR[d] ← LO
@@ -510,12 +522,8 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
-            if (rs == regindex_get("$gp"))
-                GPR[rt] = machine_types_zeroExt(GPR[GP] + memory.gp[machine_types_sgnExt(immed * 4)]);
-            else if (rs == regindex_get("$sp"))
-                GPR[rt] = machine_types_zeroExt(GPR[SP] + memory.sp[machine_types_sgnExt(immed * 4)]);
-            else 
-                GPR[rt] = machine_types_zeroExt(GPR[rs + machine_types_sgnExt(immed)]);
+             
+            GPR[rt] = machine_types_zeroExt(memory.sp[GPR[rs] + machine_types_sgnExt(immed * 4)]);
             
         }
 
@@ -613,7 +621,7 @@ void printInstruct(FILE *out, unsigned int i, char * instr)
 // This will print the bottom stuff
 void printData(FILE *out, BOFHeader bh, int length, int* data, int * GPR)
 {  
-
+  /*
     unsigned int num = bh.data_start_address;
     int i = 0; // To help with indenting
     while (length > 0)
@@ -630,15 +638,26 @@ void printData(FILE *out, BOFHeader bh, int length, int* data, int * GPR)
     }
     // reached the end, print default
     fprintf(out,"    %u: 0 ...\n", num); // 1024 ...
+    */
     // * PRINT MEMORY *
-    
-    /*for (int i = GPR[GP]; <= GPR[GP] + (4 * length); i = i + 4) {
+    int line  = 0;
+    for (int i = GPR[GP]; i <= GPR[GP] + (4 * length); i = i + 4) {
+      if (line % 5 == 0 && line > 0) // cleans output to add a new line after every 6 fprints
+            newline(out);
+            
+      if (memory.sp[i] == 0 && memory.sp[i - 4] == 0 && i != GPR[GP]) continue;
+            
       fprintf(out, "    %d: %d	", i, memory.sp[i]); // Prints "     [address]: [value]\t"
-    }*/
+      
+      if (memory.sp[i] == 0) fprintf(out, " ...");
+      line ++;
+    }
+    
+    newline(out);
     
     
     // Stack print
-    int line = 0;
+    line = 0;
     int notZero = 1;
     for (int i = GPR[SP]; i <= GPR[FP]; i = i + 4) { // Iterate from stack pointer to frame pointer
         if (line % 5 == 0 && line > 0) // cleans output to add a new line after every 6 fprints
