@@ -482,7 +482,6 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         else if (strcmp(token[0], "PCH") == 0)
         {
             fprintf(out, "%c", GPR[regindex_get("$a0")]);
-            GPR[regindex_get("$v0")] = GPR[regindex_get("$a0")];
         }
 
         // IDK if this works or not
