@@ -30,3 +30,7 @@ int main(int argc, char *argv[]) {
     
     return EXIT_SUCCESS;
 }
+
+
+
+// gcc -o disasm disasm_main.c disasm.c bof.c utilities.c instruction.c regname.c machine_types.c

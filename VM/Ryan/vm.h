@@ -7,6 +7,7 @@
 #include "bof.h"
 
 #define MEMORY_SIZE_IN_BYTES (65536 - BYTES_PER_WORD)
+
 // Pointer constants
 #define GP 28
 #define SP 29
@@ -22,6 +23,7 @@ char** instructionList (BOFHeader bh, BOFFILE bf);
 int* dataList(BOFFILE bf, BOFHeader bh);
 int* makeRegister(BOFHeader bh);
 int regindex_get(char * input);
+bool checkInvariants(int *GPR, int i);
 
 // For Tracing
 void trace(FILE *out, BOFFILE bf);
@@ -35,7 +37,7 @@ void printGPR(FILE *out, int* GPR);
 void printOut(FILE *out, BOFFILE bf);
 void printText(FILE *out, BOFFILE bf, BOFHeader bh, char ** instr);
 void printInstruct(FILE *out, unsigned int i, char * instr);
-void printData(FILE *out, BOFHeader bh, int length, int* data);
+void printData(FILE *out, BOFHeader bh, int length, int* data, int * GPR);
 
 // ****************************************************************
 

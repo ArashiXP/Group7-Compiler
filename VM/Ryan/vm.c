@@ -1,4 +1,4 @@
-// Ryan Latour
+// Michael Nguyen
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,9 +41,8 @@ int* dataList(BOFFILE bf, BOFHeader bh)
     while (length > 0)
     {
         data[i] = bof_read_word(bf);
+        memory.sp[i] = data[i];
         length--;
-        memory.gp[i] = data[i];
-        memory.sp[i] = 0;
         i++;
     }
 
@@ -75,6 +74,97 @@ int* makeRegister(BOFHeader bh)
     }
 
     return registers;
+}
+
+// The VM enforces the following invariants and will halt with an error message (written to stderr) if one of
+// them is violated
+bool checkInvariants(int *GPR, int i)
+{
+    int PC = i * BYTES_PER_WORD;
+
+    // PC % BYTES_PER_WORD = 0
+    if (PC % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "PC %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$gp] % BYTES_PER_WORD = 0,
+    if (GPR[regindex_get("$gp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$gp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$sp] % BYTES_PER_WORD = 0
+    if (GPR[regindex_get("$sp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$sp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$fp] % BYTES_PER_WORD = 0
+    if (GPR[regindex_get("$fp")] % BYTES_PER_WORD != 0)
+    {
+        fprintf(stderr, "GPR[$fp] %% BYTES_PER_WORD != 0");
+        newline(stderr);
+        return true;
+    }
+
+    // 0 ≤ GPR[$gp]
+    if (!(0 <= GPR[regindex_get("$gp")]))
+    {
+        fprintf(stderr, "0 ≤ GPR[$gp]");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$gp] < GPR[$sp]
+    if (!(GPR[regindex_get("$gp")] < GPR[regindex_get("$sp")]))
+    {
+        fprintf(stderr, "GPR[$gp] < GPR[$sp]");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$sp] ≤ GPR[$fp]
+    if (!(GPR[regindex_get("$sp")] <= GPR[regindex_get("$fp")]))
+    {
+        fprintf(stderr, "GPR[$sp] ≤ GPR[$fp]");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[$fp] < MAX_STACK_HEIGHT
+
+    // 0 ≤ PC
+    if (!(0 <= PC))
+    {
+        fprintf(stderr, "PC >= 0");
+        newline(stderr);
+        return true;
+    }
+
+    // PC < MEMORY_SIZE_IN_BYTES
+    if (!(PC < MEMORY_SIZE_IN_BYTES))
+    {
+        fprintf(stderr, "PC not less than MEMORY_SIZE_IN_BYTES");
+        newline(stderr);
+        return true;
+    }
+
+    // GPR[0] = 0
+    if (GPR[0] != 0)
+    {
+        fprintf(stderr, "Wrong call to register 0");
+        newline(stderr);
+        return true;
+    }
+
+    return false;
 }
 
 // *************************************************************************
@@ -131,18 +221,19 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
                 fprintf(out,"\tHI: %d\tLO: %d", HI, LO);
             // displays General Purpose Register Table
             printGPR(out, GPR);
-            /*if (i != length)
+            if (i != length)
             { 
                 // So we don't display this for the final call
                 // byte numbers at the end of GPR table
-                printData(out, bh, bh.data_length / BYTES_PER_WORD, data);
-                fprintf(out, "    %u: 0 ...", bh.stack_bottom_addr); // 4096
+                printData(out, bh, bh.data_length / BYTES_PER_WORD, data, GPR);
+                //fprintf(out, "    %u: 0 ...", bh.stack_bottom_addr); // 4096
                 newline(out);
-            }*/
+            }
 
             fprintf(out, "==> addr: ");
             // displays assembly instruction
             printInstruct(out, i * BYTES_PER_WORD, instruct[i]);
+            if (checkInvariants(GPR, i)) return;
         }
 
         // NOTR stop tracing
@@ -390,6 +481,7 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
         else if (strcmp(token[0], "PCH") == 0)
         {
             fprintf(out, "%c", GPR[regindex_get("$a0")]);
+            GPR[regindex_get("$v0")] = GPR[regindex_get("$a0")];
         }
 
         // IDK if this works or not
@@ -399,20 +491,17 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             GPR[regindex_get("$v0")] = getc(stdin);
         }
 
-        // LBU LW SB SW aren't functional but the general format is correct
-        // NEED TO IMPLEMENT MEMORY BETTER
 
         // LW
-        // The way i did the memory here is definitely wrong
+        
         else if (strcmp(token[0], "LW") == 0)
         {
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
-            if (rs == regindex_get("$gp"))
-                GPR[rt] = memory.gp[GPR[GP] + machine_types_sgnExt(immed)];
-            else if (rs == regindex_get("$sp"))
-                GPR[rt] = memory.sp[GPR[SP] + machine_types_sgnExt(immed)];
+            
+            GPR[rt] = memory.sp[GPR[rs] + machine_types_sgnExt(immed * 4)];
+
         }
 
         // LBU
@@ -422,34 +511,37 @@ void printTracing(FILE *out, BOFFILE bf, BOFHeader bh, char ** instruct, int* da
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (rs == regindex_get("$gp"))
-                GPR[rt] = machine_types_zeroExt(GPR[GP] + memory.gp[machine_types_sgnExt(immed)]);
+                GPR[rt] = machine_types_zeroExt(GPR[GP] + memory.gp[machine_types_sgnExt(immed * 4)]);
             else if (rs == regindex_get("$sp"))
-                GPR[rt] = machine_types_zeroExt(GPR[SP] + memory.sp[machine_types_sgnExt(immed)]);
+                GPR[rt] = machine_types_zeroExt(GPR[SP] + memory.sp[machine_types_sgnExt(immed * 4)]);
+            else 
+                GPR[rt] = machine_types_zeroExt(GPR[rs + machine_types_sgnExt(immed)]);
+            
         }
 
         // SB
         // IDK how this is supposed to be done, but this is my attempt
+        // Still need fixing
         else if (strcmp(token[0], "SB") == 0)
         {
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
             if (rs == regindex_get("$gp"))
-                memory.gp[GPR[GP] + machine_types_sgnExt(immed)] = GPR[rt] & 1;
+                memory.gp[GPR[GP] + machine_types_sgnExt(immed * 4)] = GPR[rt] & 1;
             else if (rs == regindex_get("$sp"))
-                memory.sp[GPR[SP] + machine_types_sgnExt(immed)] = GPR[rt] & 1;
+                memory.sp[GPR[SP] + machine_types_sgnExt(immed * 4)] = GPR[rt] & 1;
         }
 
         // SW
         else if (strcmp(token[0], "SW") == 0)
-        {
+        {   
             rs = regindex_get(token[1]);
             rt = regindex_get(token[2]);
             immed = atoi(token[3]);
-            if (rs == regindex_get("$gp"))
-                memory.gp[GPR[GP] + machine_types_sgnExt(immed)] = GPR[rt];
-            else if (rs == regindex_get("$sp"))
-                memory.sp[GPR[SP] + machine_types_sgnExt(immed)] = GPR[rt];
+            
+            memory.sp[GPR[rs] + machine_types_sgnExt(immed * 4)] = GPR[rt];
+
         }
 
         // If there is an exit, we stop with no return
@@ -480,22 +572,6 @@ void printGPR(FILE *out, int* GPR)
         fprintf(out, "GPR[%-3s]: %d\t", regname_get(j), GPR[j]);
     }
     newline(out);
-
-    // * PRINT MEMORY *
-    // NEED TO DO GLOBAL
-
-    // Stack print
-    int line = 0;
-    for (int i = GPR[SP]; i <= GPR[FP]; i = i + 4) { // Iterate from stack pointer to frame pointer
-        if (line % 6 == 0 && line > 0) // cleans output to add a new line after every 6 fprints
-            newline(out);
-
-        fprintf(out, "\t%d: %d", i, memory.sp[i]); // Prints "  [address]: [value]"
-
-        line ++;
-    }
-    fprintf(out, " ...");
-    newline(out);
 }
 // *************************************************************************
 
@@ -508,7 +584,7 @@ void printOut(FILE *out, BOFFILE bf)
     char **instructions = instructionList(bh, bf); // hold instructions
     int *data = dataList(bf, bh); // hold bottom addresses
     printText(out, bf, bh, instructions);
-    printData(out, bh, bh.data_length / BYTES_PER_WORD, data);
+    //printData(out, bh, bh.data_length / BYTES_PER_WORD, data, GPR);
     
     // Free everything
     for (int i = 0; i < bh.text_length / BYTES_PER_WORD; i++)
@@ -535,12 +611,14 @@ void printInstruct(FILE *out, unsigned int i, char * instr)
 }
 
 // This will print the bottom stuff
-void printData(FILE *out, BOFHeader bh, int length, int* data)
+void printData(FILE *out, BOFHeader bh, int length, int* data, int * GPR)
 {  
+
     unsigned int num = bh.data_start_address;
     int i = 0; // To help with indenting
     while (length > 0)
     {
+        if (data[i] == 0) break; 
         // line break when there are five on a line
         if (i % 5 == 0 && i != 0)
             newline(out);
@@ -551,7 +629,32 @@ void printData(FILE *out, BOFHeader bh, int length, int* data)
         i++;
     }
     // reached the end, print default
-    fprintf(out,"    %u: 0 ...", num); // 1024 ...
+    fprintf(out,"    %u: 0 ...\n", num); // 1024 ...
+    // * PRINT MEMORY *
+    
+    /*for (int i = GPR[GP]; <= GPR[GP] + (4 * length); i = i + 4) {
+      fprintf(out, "    %d: %d	", i, memory.sp[i]); // Prints "     [address]: [value]\t"
+    }*/
+    
+    
+    // Stack print
+    int line = 0;
+    int notZero = 1;
+    for (int i = GPR[SP]; i <= GPR[FP]; i = i + 4) { // Iterate from stack pointer to frame pointer
+        if (line % 5 == 0 && line > 0) // cleans output to add a new line after every 6 fprints
+            newline(out);
+            
+        if (memory.sp[i] == 0 && memory.sp[i - 4] == 0 && (i-4) >= GPR[SP]) continue;
+        
+          
+        fprintf(out, "    %d: %d	", i, memory.sp[i]); // Prints "     [address]: [value]\t"
+        
+        if (memory.sp[i] == 0) fprintf(out, " ...");
+
+        line ++;
+    }
+    //fprintf(out, " ...");
+
     newline(out);
 }
 
@@ -566,13 +669,11 @@ int main(int argc, char *arg[])
 
     if (strcmp(arg[1], "-p") == 0) // Uses -p option for output
     {
-        printf("***Working On OUTPUT (.myp/.lst)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[2]); // Reading the bof file and storing a file pointer to bf
         printOut(stdout, bf);
     }
     else // if no -p then print trace
     {
-        printf("***Working On TRACING (.myo/.out)***\n"); // TO BE REMOVED
         bf = bof_read_open(arg[1]);
         trace(stdout, bf); 
     }
