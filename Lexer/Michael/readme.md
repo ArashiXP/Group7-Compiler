@@ -4,7 +4,8 @@ I already did all the necessary stuff to make the pl0_lexers so don't worry too 
     However, there could be an error in his lexer_output code which I talked about him in class 
     so that will be fixed soon probably
 
-    So it is best to probably wait a little bit before starting
+    So it is best to probably wait a 
+    little bit before starting
 
 In any case, the what we are doing is very similar to 
 his asm code, espically the ./asm -l function in his asm
@@ -13,16 +14,16 @@ HW1 files
 
 We don't touch the user code in the pl0 lexer, but we do write rules and add declarations
 
-**pl0_lexer.l**
-%{
-    declarations
-%}
+**pl0_lexer.l**<br>
+%{<br>
+    declarations<br>
+%}<br>
 
-%%
-    rules
-%%
+%%<br>
+    rules<br>
+%%<br>
 
-user code
+user code<br>
 
 and we write our main stuff in lexer_main.c
 
