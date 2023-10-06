@@ -1,12 +1,34 @@
-I did some playing around and managed to get<br>
-make to work, I have a meh understanding of <br>
-how flex works but all we have to do is play <br>
-with the lexer_main.c
+I got some answers from the professor regarding this assignment
 
-Though I could be entirely wrong, since I'm more <br>
-focused on our midterm and some other exams I have <br>
-next week sooo
+I already did all the necessary stuff to make the pl0_lexers so don't worry too much about that 
+    However, there could be an error in his lexer_output code which I talked about him in class 
+    so that will be fixed soon probably
 
-If you can figure anything out please make a readme<br>
-or a note or anything and just post it to discord or<br>
-whatever
+    So it is best to probably wait a little bit before starting
+
+In any case, the what we are doing is very similar to 
+his asm code, espically the ./asm -l function in his asm
+code which is in the example code on his website, or in 
+HW1 files
+
+We don't touch the user code in the pl0 lexer, but we do write rules and add declarations
+
+**pl0_lexer.l**
+%{
+    declarations
+%}
+
+%%
+    rules
+%%
+
+user code
+
+and we write our main stuff in lexer_main.c
+
+run make when finishing editing the **pl0_lexer.l** to run the flex and then that will make **pl0_lexer.c** and **pl0_lexer.h**
+
+**lexer_main.c** should initialise the lexer and close it and all the other functions
+
+Just take a look at the asm code, it pretty much is word
+for word how to do this
