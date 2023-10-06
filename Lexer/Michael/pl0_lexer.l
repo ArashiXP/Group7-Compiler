@@ -70,16 +70,7 @@ static void number2ast(unsigned int val)
 
 %}
 
- /* you can add actual definitions below */
-
-
- /* the rules section starts after the %% below */
-
 %%
-
-/* fill in the rules for your lexer here! */
-
-/* $Id: pl0_lexer_user_code.c,v 1.3 2023/10/06 11:12:37 leavens Exp leavens $ */
 
 %% 
 
