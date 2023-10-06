@@ -2,8 +2,7 @@ I got some answers from the professor regarding this assignment
 
 I already did all the necessary stuff to make the pl0_lexers so don't worry too much about that 
     However, there could be an error in his lexer_output code which I talked about him in class 
-    so that will be fixed soon probably
-
+    so that will be fixed soon probably<br>
     So it is best to probably wait a 
     little bit before starting
 
