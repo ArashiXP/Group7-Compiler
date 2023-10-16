@@ -1,11 +1,3 @@
-I got some answers from the professor regarding this assignment
-
-I already did all the necessary stuff to make the pl0_lexers so don't worry too much about that 
-    However, there could be an error in his lexer_output code which I talked about him in class 
-    so that will be fixed soon probably<br>
-    So it is best to probably wait a 
-    little bit before starting
-
 In any case, the what we are doing is very similar to 
 his asm code, espically the ./asm -l function in his asm
 code which is in the example code on his website, or in 
@@ -24,11 +16,13 @@ We don't touch the user code in the pl0 lexer, but we do write rules and add dec
 
 user code<br>
 
-and we write our main stuff in lexer_main.c
+**lexer_main.c** should be done, but you can add an error message in case there is no files called alongside the program
 
-run make when finishing editing the **pl0_lexer.l** to run the flex and then that will make **pl0_lexer.c** and **pl0_lexer.h**
+I added all the sym's in the rules section of the pl0_lexer.l file, and we aren't allowed to touch the user code which is <br>
+all the way at the bottom of said file
 
-**lexer_main.c** should initialise the lexer and close it and all the other functions
+Near the end of the rules section there is an error message for invalid characters, but i don't know how to make one to<br>
+limits of numbers
 
-Just take a look at the asm code, it pretty much is word
-for word how to do this
+So that is all we have to do to finish, and whenever one of us does that, I'll do the testing on eustis and submit it again
+

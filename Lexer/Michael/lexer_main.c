@@ -8,9 +8,11 @@
 #include "lexer.h"
 #include "pl0_lexer.h"
 
+extern int yydebug;
+
 int main(int argc, char*argv[])
 {
-	argc--;
+	argc--; 
 	argv++;
 	char *filename = argv[0];
 	lexer_init(filename);

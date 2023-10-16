@@ -70,7 +70,97 @@ static void number2ast(unsigned int val)
 
 %}
 
+ /* you can add actual definitions below */
+
+
+ /* the rules section starts after the %% below */
+
+DECDIGIT	[0-9]
+UNSIGNEDNUMBER  (((0x)[0-9A-Fa-f]+)|{DECDIGIT}+)
+LETTER		[_a-zA-Z]
+LETTERORDIGIT	({LETTER}|{DECDIGIT})
+IDENT		{LETTER}({LETTERORDIGIT}*)
+NEWLINE         \n
+CR              \r
+EOL             ({NEWLINE}|({CR}{NEWLINE}))
+COMMENTSTART    #
+COMMENT         {COMMENTSTART}.*
+IGNORED         [ \t\v\f\r]
+
+  /* states of the lexer */
+
+%s INSTRUCTION
+%s DATADECL
+
 %%
+
+{IGNORED}       { ; } 
+{COMMENT}       { ; } 
+<INSTRUCTION>{EOL} { BEGIN INITIAL; return YYEOF; }
+<DATADECL>{EOL} { BEGIN INITIAL; return YYEOF; }
+{EOL}           { ; } 
+
+identsym          { tok2ast(identsym); return identsym; }
+numbersym         { tok2ast(numbersym); return numbersym; }
+\+                { tok2ast(plussym); return plussym; }
+-                 { tok2ast(minussym); return minussym; }
+\*                { tok2ast(multsym); return multsym; }
+\/                { tok2ast(divsym); return divsym; }
+\.                { tok2ast(periodsym); return periodsym; }
+\;                { tok2ast(periodsym); return semisym; }
+\=                { tok2ast(eqsym); return eqsym; }
+,                 { tok2ast(commasym); return commasym; }
+\:=               { tok2ast(becomessym); return becomessym; }
+const             { tok2ast(constsym); return constsym; }
+var               { tok2ast(varsym); return varsym; }
+procedure         { tok2ast(proceduresym); return proceduresym; }
+call              { tok2ast(callsym); return callsym; }
+begin             { tok2ast(beginsym); return beginsym; }
+end               { tok2ast(endsym); return endsym; }
+if                { tok2ast(ifsym); return ifsym; }
+then              { tok2ast(thensym); return thensym; }
+else              { tok2ast(elsesym); return elsesym; }
+while             { tok2ast(whilesym); return whilesym; }
+do                { tok2ast(dosym); return dosym; }
+read              { tok2ast(readsym); return readsym; }
+write             { tok2ast(writesym); return writesym; }
+skip              { tok2ast(skipsym); return skipsym; }
+odd               { tok2ast(oddsym); return oddsym; }
+\<>               { tok2ast(neqsym); return neqsym; }
+\<                { tok2ast(ltsym); return ltsym; }
+\<=               { tok2ast(leqsym); return leqsym; }
+\>                { tok2ast(gtsym); return gtsym; }
+\>=               { tok2ast(geqsym); return geqsym; }
+\(                { tok2ast(lparensym); return lparensym; }
+\)                { tok2ast(rparensym); return rparensym; }
+
+{IDENT}           { ident2ast(yytext); return identsym; }
+
+{UNSIGNEDNUMBER} { unsigned int val;
+                  int ssf_ret;
+                  if (yyleng >= 2 && (strncmp(yytext, "0x", 2) == 0)) {
+                      // hex literal
+                      ssf_ret = sscanf(yytext+2, "%xt", &val);
+                      if (ssf_ret != 1) {
+                         bail_with_error("Unsigned hex literal (%s) could not be read by lexer!",
+                         yytext);
+                      }
+                  } else {
+                      ssf_ret = sscanf(yytext, "%ut", &val);
+                      if (ssf_ret != 1) {
+                         bail_with_error("Unsigned decimal literal (%s) could not be read by lexer!",
+                         yytext);
+                      }
+                  }
+                  
+                  number2ast(val);
+                  return numbersym; 
+                }
+
+.   { char msgbuf[512];
+      sprintf(msgbuf, "invalid character: '%c' ('\\0%o')", *yytext, *yytext);
+      yyerror(lexer_filename(), msgbuf);
+    }
 
 %% 
 
