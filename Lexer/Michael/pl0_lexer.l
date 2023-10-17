@@ -152,6 +152,14 @@ odd               { tok2ast(oddsym); return oddsym; }
                          yytext);
                       }
                   }
+
+                  if (yyleng > 5)
+                  {
+                    char msgbuf[512];
+                    sprintf(msgbuf, "Number (%s) is too large!", yytext);
+                    yyerror(lexer_filename(), msgbuf);
+                  }
+
                   
                   number2ast(val);
                   return numbersym; 
