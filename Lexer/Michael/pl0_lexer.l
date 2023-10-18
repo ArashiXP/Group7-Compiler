@@ -69,16 +69,10 @@ static void number2ast(unsigned int val)
 }
 
 %}
-
- /* you can add actual definitions below */
-
-
- /* the rules section starts after the %% below */
-
-DECDIGIT	[0-9]
-UNSIGNEDNUMBER  (((0x)[0-9A-Fa-f]+)|{DECDIGIT}+)
+DIGIT	[0-9]
+NUMBER  (((0x)[0-9A-Fa-f]+)|{DIGIT}+)
 LETTER		[_a-zA-Z]
-LETTERORDIGIT	({LETTER}|{DECDIGIT})
+LETTERORDIGIT	({LETTER}|{DIGIT})
 IDENT		{LETTER}({LETTERORDIGIT}*)
 NEWLINE         \n
 CR              \r
@@ -96,12 +90,9 @@ IGNORED         [ \t\v\f\r]
 
 {IGNORED}       { ; } 
 {COMMENT}       { ; } 
-<INSTRUCTION>{EOL} { BEGIN INITIAL; return YYEOF; }
-<DATADECL>{EOL} { BEGIN INITIAL; return YYEOF; }
 {EOL}           { ; } 
 
-identsym          { tok2ast(identsym); return identsym; }
-numbersym         { tok2ast(numbersym); return numbersym; }
+ /*Below we assign the values to the tokens*/
 \+                { tok2ast(plussym); return plussym; }
 -                 { tok2ast(minussym); return minussym; }
 \*                { tok2ast(multsym); return multsym; }
@@ -136,7 +127,7 @@ odd               { tok2ast(oddsym); return oddsym; }
 
 {IDENT}           { ident2ast(yytext); return identsym; }
 
-{UNSIGNEDNUMBER} { unsigned int val;
+{NUMBER} { unsigned int val;
                   int ssf_ret;
                   if (yyleng >= 2 && (strncmp(yytext, "0x", 2) == 0)) {
                       // hex literal
@@ -152,29 +143,22 @@ odd               { tok2ast(oddsym); return oddsym; }
                          yytext);
                       }
                   }
-
+                  // If the number is bigger than 5 digits, it is too large
                   if (yyleng > 5)
                   {
                     char msgbuf[512];
                     sprintf(msgbuf, "Number (%s) is too large!", yytext);
                     yyerror(lexer_filename(), msgbuf);
                   }
-
-                  
-                  number2ast(val);
                   return numbersym; 
                 }
-
+ /* If the token doesn't match any of the regex or rules, we print an error */
 .   { char msgbuf[512];
       sprintf(msgbuf, "invalid character: '%c' ('\\0%o')", *yytext, *yytext);
       yyerror(lexer_filename(), msgbuf);
     }
 
 %% 
-
-/* This code goes in the user code section of the pl0_lexer.l file,
-   following the last %% above. */
-
 // Requires: fname != NULL
 // Requires: fname is the name of a readable file
 // Initialize the lexer and start it reading

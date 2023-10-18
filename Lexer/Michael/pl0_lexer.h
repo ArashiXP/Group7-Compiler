@@ -487,7 +487,7 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 174 "pl0_lexer.l"
+#line 162 "pl0_lexer.l"
 
 
 #line 493 "pl0_lexer.h"
