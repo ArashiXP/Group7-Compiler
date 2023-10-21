@@ -226,6 +226,8 @@ extern char *yytext;
 
 #ifdef YY_HEADER_EXPORT_START_CONDITIONS
 #define INITIAL 0
+#define INSTRUCTION 1
+#define DATADECL 2
 
 #endif
 
@@ -485,9 +487,9 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 75 "pl0_lexer.l"
+#line 162 "pl0_lexer.l"
 
 
-#line 491 "pl0_lexer.h"
+#line 493 "pl0_lexer.h"
 #undef yyIN_HEADER
 #endif /* yyHEADER_H */
