@@ -3,18 +3,18 @@
 #include "parser.h"
 #include "lexer.h"
 #include "ast.h"
-#include "symtab.h"
-#include "scope_check.h"
+// #include "symtab.h"
+// #include "scope_check.h"
 #include "utilities.h"
 #include "unparser.h"
 
-/* Print a usage message on stderr 
+/* Print a usage message on stderr
    and exit with failure. */
 static void usage(const char *cmdname)
 {
     fprintf(stderr,
-	    "Usage: %s code-filename\n",
-	    cmdname);
+            "Usage: %s code-filename\n",
+            cmdname);
     exit(EXIT_FAILURE);
 }
 
@@ -23,8 +23,9 @@ int main(int argc, char *argv[])
     const char *cmdname = argv[0];
     --argc;
     /* 1 non-option argument */
-    if (argc != 1 || argv[1][0] == '-') {
-	    usage(cmdname);
+    if (argc != 1 || argv[1][0] == '-')
+    {
+        usage(cmdname);
     }
 
     lexer_init(argv[1]);
@@ -35,9 +36,9 @@ int main(int argc, char *argv[])
     unparseProgram(stdout, progast);
 
     // building symbol table
-    symtab_initialize();
+    // symtab_initialize();
     // check for duplicate declarations
-    scope_check_program(progast);
+    // scope_check_program(progast);
 
     return EXIT_SUCCESS;
 }
