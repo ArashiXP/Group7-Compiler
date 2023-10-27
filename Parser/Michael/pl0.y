@@ -221,6 +221,7 @@ term: factor | term "*" factor | term "/" factor
  /*⟨factor⟩ ::= ⟨ident⟩ | ⟨minus⟩ ⟨number⟩ | ⟨pos-sign⟩ ⟨number⟩ | ( ⟨expr⟩ )*/
 factor: identsym {$$ = ast_expr_ident($1);}
       | "-" numbersym {$$ = ast_expr_negated_number($1,$2);} 
+      | numbersym {$$ = ast_expr_number($1);}
       | posSign numbersym {$$ = ast_expr_pos_number($1,$2);} 
       | "(" expr ")" {$$ = $2;};
 

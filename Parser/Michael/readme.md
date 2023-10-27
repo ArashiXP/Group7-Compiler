@@ -21,3 +21,8 @@ should be empty so it will move over to the number and continue parsing.
 More or less I need help with writin just the | empty rule for posSign
 
 I haven't even looked at part 2 yet
+
+<br>
+
+I added a rule for factor: and now it just prints out the token code, I don't know how to change that to be honest, but it <br>
+is printing mostly all the right things, we just have to fix it printing out token codes
