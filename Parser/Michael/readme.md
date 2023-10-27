@@ -1,4 +1,4 @@
-10/23
+10/23<br>
 I've started working on the parser, part one is a bit of a doozy, I tried looking at Maria's code for the .y file and <br>
 I tried to write my own code in my .y file<br>
 I was going to wait after thursday so the TA would shed some insight but I got worried so I started now.<br>
@@ -9,7 +9,7 @@ great of code from me.
 I managed to fit in most of the pl0 grammar the professor provided, but hit a wall so I stopped, I won't be working on it<br>
 until after thursday cause I am really busy, but next week I promise I'll be working specifically on it.<br>
 
-10/27
+10/27<br>
 I pretty much finished the bison parser, but the only issue that remains is the empty rule for posSign near the bottom of <br>
 the code in pl0.y
 
