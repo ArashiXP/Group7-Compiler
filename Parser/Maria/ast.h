@@ -1,4 +1,4 @@
-/* $Id: ast.h,v 1.17 2023/10/15 21:29:24 leavens Exp $ */
+/* $Id: ast.h,v 1.19 2023/10/27 01:43:53 leavens Exp leavens $ */
 #ifndef _AST_H
 #define _AST_H
 #include <stdbool.h>
@@ -469,6 +469,9 @@ extern expr_t ast_expr_binary_op(binary_op_expr_t e);
 // Return an expression AST for an identifier
 extern expr_t ast_expr_ident(ident_t e);
 
+// Return an AST for an expression that's a number
+extern expr_t ast_expr_number(number_t e);
+
 // Return an expression AST for a negated number
 extern expr_t ast_expr_negated_number(token_t sign, number_t number);
 
@@ -486,7 +489,7 @@ extern ident_t ast_ident(file_location *file_loc, const char *name);
 extern number_t ast_number(token_t sgn, word_type value);
 
 // Return an AST for empty found in the given file location
-empty_t ast_empty(file_location *file_loc);
+extern empty_t ast_empty(file_location *file_loc);
 
 // Requires: lst is a pointer to a non-circular 
 //           linked list with next pointers

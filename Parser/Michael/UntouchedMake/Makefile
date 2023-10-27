@@ -23,7 +23,8 @@ PL0 = pl0
 # Feel free to edit the following definition of COMPILER_OBJECTS
 COMPILER_OBJECTS = $(COMPILER)_main.o $(PL0)_lexer.o \
 		parser.o unparser.o id_use.o \
-		id_attrs.o ast.o $(PL0).tab.o file_location.o utilities.o 
+		id_attrs.o ast.o $(PL0).tab.o file_location.o utilities.o \
+		scope.o scope_check.o symtab.o  
 
 # If you want to test the lexical analysis part separately,
 # then you might want to build the lexer,
@@ -129,7 +130,7 @@ check-nondecl-outputs: $(COMPILER) $(NONDECLTESTS)
 	do \
 		echo running "$$f.pl0"; \
 		./$(COMPILER) "$$f.pl0" >"$$f.myo" 2>&1; \
-		diff -w -B -qs "$$f.out" "$$f.myo" && echo 'passed!' || DIFFS=1; \
+		diff -w -B "$$f.out" "$$f.myo" && echo 'passed!' || DIFFS=1; \
 	done; \
 	if test 0 = $$DIFFS; \
 	then \

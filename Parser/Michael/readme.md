@@ -8,3 +8,16 @@ great of code from me.
 
 I managed to fit in most of the pl0 grammar the professor provided, but hit a wall so I stopped, I won't be working on it<br>
 until after thursday cause I am really busy, but next week I promise I'll be working specifically on it.<br>
+
+10/27
+I pretty much finished the bison parser, but the only issue that remains is the empty rule for posSign near the bottom of <br>
+the code in pl0.y
+
+If anyone can, please try to make it so it can handle no sign or most of the outputs won't work.
+
+The PosSign rule will recognise a posSign like + then do its thing, but most of the inputs don't have a sign so it posSign<br>
+should be empty so it will move over to the number and continue parsing.
+
+More or less I need help with writin just the | empty rule for posSign
+
+I haven't even looked at part 2 yet
