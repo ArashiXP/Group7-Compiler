@@ -13,7 +13,6 @@
 #include "parser_types.h"
 #include "lexer.h"
 
-
     /* Report an error to the user on stderr */
 extern void yyerror(const char *filename, const char *msg);
 
@@ -114,34 +113,119 @@ extern void setProgAST(block_t t);
 
 %%
  /* Write your grammar rules below and before the next %% */
+ 
+ /*⟨program⟩ ::= ⟨block⟩ .*/
+program: block "." {setProgAST($1);};
 
- /* honestly most of this makes no sense */
-program:      block { ast_block(const_decls_t const_decls, var_decls_t var_decls, proc_decls_t proc_decls, stmt_t stmt);
-                       setProgAST(progast); }
-            ;
+ /*⟨block⟩ ::= ⟨const-decls⟩ ⟨var-decls⟩ ⟨proc-decls⟩ ⟨stmt⟩*/
+block: constDecls varDecls procDecls stmt {$$ = ast_block($1, $2, $3, $4);};
 
-block:      stmts { $$ = }
+constDecls: empty {$$ = ast_const_decls_empty($1);}
+            | constDecls constDecl
+            {$$ = ast_const_decls($1, $2);};
 
-stmts:        beginStmt
-            | writeStmt
-            | skipStmt {$$ = ast_stmt_skip($1); }
-            ;
+ /*⟨var-decls⟩ ::= {⟨var-decl⟩}*/
+varDecls: empty {$$ = ast_var_decls_empty($1);}
+            | varDecls varDecl 
+            {$$ = ast_var_decls($1, $2);};
 
-writeStmt:  identsym "write" identsym numbersym { printf("%d\n", $4); } 
-            | writesym { printf("broken"); }
-            ;
+ /*⟨var-decl⟩ ::= var ⟨idents⟩ ;*/
+varDecl: "var" idents ";" {$$ = ast_var_decl($2);};
 
-beginStmt:  "begin"  { $$ = printf("being \n"); }
-            ;
+ /*⟨idents⟩ ::= ⟨ident⟩ | ⟨idents⟩ , ⟨ident⟩*/
+idents: identsym {$$ = ast_idents_singleton($1);} 
+        | idents "," identsym 
+        {$$ = ast_idents($1, ast_ident($3.file_loc, $3.name));};
 
-skipStmt:   skipsym {file_loc = file_location_maker(file_name, linenumber); // need to add the right linenum variable
-                    $$ = ast_skip_stmt(file_loc); }
-            ;
+ /*⟨proc-decls⟩ ::= {⟨proc-decl⟩}*/
+procDecls: empty {$$ = ast_proc_decls_empty($1);}
+        | procDecls procDecl 
+        {$$ = ast_proc_decls($1, $2);};
 
+ /*⟨empty⟩ ::= */
+empty: %empty {$$ = ast_empty($$.file_loc);};
 
-expr:       expr periodsym { printf(".\n"); } // need to add this to the stack thing
-            ;
+ /*⟨const-decl⟩ ::= const ⟨const-defs⟩ ;*/
+constDecl: "const" constDefs ";" {$$ = ast_const_decl($2);};
 
+ /*⟨const-def⟩ ::= ⟨ident⟩ = ⟨number⟩*/
+constDef: identsym "=" numbersym {$$ = ast_const_def($1, $3);};
+
+ /*⟨const-defs⟩ ::= ⟨const-def⟩ | ⟨const-defs⟩ , ⟨const-def⟩*/
+constDefs: constDef {$$ = ast_const_defs_singleton($1);} 
+        | constDefs "," constDef 
+        {$$ = ast_const_defs($1, $3);};
+
+ /*⟨proc-decl⟩ ::= procedure ⟨ident⟩ ; ⟨block⟩ ;*/
+procDecl: "procedure" identsym ";" block ";" {$$ = ast_proc_decl($2, $4);};
+
+ /*⟨stmt⟩ ::= ⟨assign-stmt⟩ | ⟨call-stmt⟩ | ⟨begin-stmt⟩ | ⟨if-stmt⟩ */
+ /*| ⟨while-stmt⟩ | ⟨read-stmt⟩ | ⟨write-stmt⟩ | ⟨skip-stmt⟩*/
+stmt: assignStmt     {$$ = ast_stmt_assign($1);}
+    | callStmt       {$$ = ast_stmt_call($1);}
+    | beginStmt      {$$ = ast_stmt_begin($1);}
+    | ifStmt         {$$ = ast_stmt_if($1);}
+    | whileStmt      {$$ = ast_stmt_while($1);}
+    | readStmt       {$$ = ast_stmt_read($1);}
+    | writeStmt      {$$ = ast_stmt_write($1);}
+    | skipStmt       {$$ = ast_stmt_skip($1);}
+    ;
+
+ /*⟨assign-stmt⟩ ::= ⟨ident⟩ := ⟨expr⟩*/
+assignStmt: identsym ":=" expr {$$ = ast_assign_stmt($1, $3);};
+
+ /*⟨call-stmt⟩ ::= call ⟨ident⟩*/
+callStmt: "call" identsym {$$ = ast_call_stmt($2);};
+
+ /*⟨begin-stmt⟩ ::= begin ⟨stmts⟩ end*/
+beginStmt: "begin" stmts "end" {$$ = ast_begin_stmt($2);};
+
+ /*⟨if-stmt⟩ ::= if ⟨condition⟩ then ⟨stmt⟩ else ⟨stmt⟩*/
+ifStmt: "if" condition "then" stmt "else" stmt {$$ = ast_if_stmt($2, $4, $6);};
+
+ /*⟨while-stmt⟩ ::= while ⟨condition⟩ do ⟨stmt⟩*/
+whileStmt: "while" condition "do" stmt {$$ = ast_while_stmt($2, $4);};
+
+ /*⟨read-stmt⟩ ::= read ⟨ident⟩*/
+readStmt: "read" identsym {$$ = ast_read_stmt($2);};
+
+ /*⟨write-stmt⟩ ::= write ⟨expr⟩*/
+writeStmt: "write" expr {$$ = ast_write_stmt($2);};
+
+ /*⟨skip-stmt⟩ ::= skip*/
+skipStmt: "skip" {$$ = ast_skip_stmt($1.file_loc);};
+
+stmts: stmt {$$ = ast_stmts_singleton($1);} 
+        | stmts ";" stmt 
+        {$$ = ast_stmts($1, $3);};
+
+ /*condition⟩ ::= ⟨odd-condition⟩ | ⟨rel-op-condition⟩*/
+condition: oddCondition    {$$ = ast_condition_odd($1);}
+         | relOpCondition {$$ = ast_condition_rel($1);};
+
+ /*⟨odd-condition⟩ ::= odd ⟨expr⟩*/
+oddCondition: "odd" expr {$$ = ast_odd_condition($2);};
+
+ /*⟨rel-op-condition⟩ ::= ⟨expr⟩ ⟨rel-op⟩ ⟨expr⟩*/
+relOpCondition: expr relOp expr {$$ = ast_rel_op_condition($1, $2, $3);};
+
+ /*⟨rel-op⟩ ::= = | <> | < | <= | > | >=*/
+relOp: "=" | "<>" | "<" | "<=" | ">" | ">="
+
+ /*⟨expr⟩ ::= ⟨term⟩ | ⟨expr⟩ ⟨plus⟩ ⟨term⟩ | ⟨expr⟩ ⟨minus⟩ ⟨term⟩*/
+expr: term | expr "+" term | expr "-" term 
+
+ /*⟨term⟩ ::= ⟨factor⟩ | ⟨term⟩ ⟨mult⟩ ⟨factor⟩ | ⟨term⟩ ⟨div⟩ ⟨factor⟩*/
+term: factor | term "*" factor | term "/" factor 
+
+ /*⟨factor⟩ ::= ⟨ident⟩ | ⟨minus⟩ ⟨number⟩ | ⟨pos-sign⟩ ⟨number⟩ | ( ⟨expr⟩ )*/
+factor: identsym {$$ = ast_expr_ident($1);}
+      | "-" numbersym {$$ = ast_expr_negated_number($1,$2);} 
+      | numbersym {$$ = ast_expr_number($1);}
+      | posSign numbersym {$$ = ast_expr_pos_number($1,$2);} 
+      | "(" expr ")" {$$ = $2;};
+
+posSign: "+" {$$ = ast_token($1.file_loc, "+", plussym);};
 %%
 
 // Set the program's ast to be ast
