@@ -1,1 +1,5 @@
-hw3-test1.pl0:3: syntax error, unexpected numbersym, expecting identsym or + or - or (
+begin
+  write 49;
+  write 10
+end
+.

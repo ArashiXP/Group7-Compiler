@@ -129,7 +129,7 @@ check-nondecl-outputs: $(COMPILER) $(NONDECLTESTS)
 	do \
 		echo running "$$f.pl0"; \
 		./$(COMPILER) "$$f.pl0" >"$$f.myo" 2>&1; \
-		diff -w -B -qs "$$f.out" "$$f.myo" && echo 'passed!' || DIFFS=1; \
+		diff -w -B "$$f.out" "$$f.myo" && echo 'passed!' || DIFFS=1; \
 	done; \
 	if test 0 = $$DIFFS; \
 	then \
