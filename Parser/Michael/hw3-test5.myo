@@ -1,1 +1,13 @@
-hw3-test5.pl0:4: syntax error, unexpected numbersym, expecting identsym or + or - or (
+var x;
+begin
+  x := (2 - 1);
+  if x <= 1
+  then
+    write x
+  else
+    skip;
+  while x <= 10
+  do
+    x := (x + 1)
+end
+.

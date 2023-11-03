@@ -1,1 +1,7 @@
-hw3-asttest8.pl0:7: syntax error, unexpected numbersym, expecting identsym or + or - or (
+const a = 3, b = 4, c = 5;
+const d = 6, e = 7, f = 8, g = 9;
+var q, r, s;
+var t, u, v;
+var w, x, y, z;
+x := 0
+.

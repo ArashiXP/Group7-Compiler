@@ -26,3 +26,6 @@ I haven't even looked at part 2 yet
 
 I added a rule for factor: and now it just prints out the token code, I don't know how to change that to be honest, but it <br>
 is printing mostly all the right things, we just have to fix it printing out token codes
+
+10/30 <br>
+For now I finished the first part of the parser, meaning all non-decl stuff is done I'll keep at part 2, I just wanted to push this now so if anyone wants to do something they have the working code

@@ -68,9 +68,15 @@ static void number2ast(unsigned int val)
     yylval = t;
 }
 
+static void numberTooBig()
+{
+    char msgbuf[522];
+    snprintf(msgbuf, 522, "Number too large (%s)!", yytext);
+    yyerror(lexer_filename(), msgbuf);
+}
+
 %}
 DIGIT	[0-9]
-NUMBER  (((0x)[0-9A-Fa-f]+)|{DIGIT}+)
 LETTER		[_a-zA-Z]
 LETTERORDIGIT	({LETTER}|{DIGIT})
 IDENT		{LETTER}({LETTERORDIGIT}*)
@@ -127,36 +133,19 @@ odd               { tok2ast(oddsym); return oddsym; }
 
 {IDENT}           { ident2ast(yytext); return identsym; }
 
-{NUMBER} { unsigned int val;
-                  int ssf_ret;
-                  if (yyleng >= 2 && (strncmp(yytext, "0x", 2) == 0)) {
-                      // hex literal
-                      ssf_ret = sscanf(yytext+2, "%xt", &val);
-                      if (ssf_ret != 1) {
-                         bail_with_error("Unsigned hex literal (%s) could not be read by lexer!",
-                         yytext);
-                      }
+{DIGIT}{1,5}    { unsigned int ui;
+                  sscanf(yytext, "%u", &ui);
+                  if (USHRT_MAX < ui) {
+                      numberTooBig();
                   } else {
-                      ssf_ret = sscanf(yytext, "%ut", &val);
-                      if (ssf_ret != 1) {
-                         bail_with_error("Unsigned decimal literal (%s) could not be read by lexer!",
-                         yytext);
-                      }
+                      number2ast(ui); 
+                      return numbersym;
                   }
-                  // If the number is bigger than 5 digits, it is too large
-                  if (yyleng > 5)
-                  {
-                    char msgbuf[512];
-                    sprintf(msgbuf, "Number (%s) is too large!", yytext);
-                    yyerror(lexer_filename(), msgbuf);
-                  }
-                  return numbersym; 
                 }
- /* If the token doesn't match any of the regex or rules, we print an error */
-.   { char msgbuf[512];
-      sprintf(msgbuf, "invalid character: '%c' ('\\0%o')", *yytext, *yytext);
-      yyerror(lexer_filename(), msgbuf);
-    }
+{DIGIT}+        { numberTooBig(); }
+
+
+
 
 %% 
 // Requires: fname != NULL
