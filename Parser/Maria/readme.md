@@ -11,3 +11,8 @@
 10/27
     - changed some things on the lexer that were messing with the 'numbersym'
     - all that is left for the parser is to make the 'equations' work for example: (3 * 4)
+
+11/3
+    - created all the files needed for part 2
+    - for the grammar the only thing that works is the variables declaration checking
+    - started working on constant declaration checking, will get it working later today
