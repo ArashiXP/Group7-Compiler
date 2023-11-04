@@ -14,5 +14,4 @@
 
 11/3
     - created all the files needed for part 2
-    - for the grammar the only thing that works is the variables declaration checking
     - finished const declaration (still need some fixing), need to work on call/procedure stuff
