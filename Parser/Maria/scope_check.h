@@ -25,7 +25,14 @@ extern void scope_check_idents(idents_t ids, char type);
 extern void scope_check_constDefs(const_defs_t cdefs);
 extern void scope_check_constDef(const_def_t cdef);
 extern void scope_check_constDecl(const_decl_t cdcl);
-extern void scope_check_constDecls(const_decl_t cdcls);
+extern void scope_check_constDecls(const_decls_t cdcls);
+
+extern void scope_check_procDecls(proc_decls_t pds);
+extern void scope_check_procDecl(proc_decl_t pd);
+void scope_check_procedure(proc_decl_t pd, const char *name);
+void scope_check_declare_procedure(proc_decl_t pd, const char *name);
+
+void scope_check_call_procedure(call_stmt_t cs, const char *name);
 
 // Add a declaration of the name id.name with the type vt
 // to the current scope's symbol table,
@@ -68,6 +75,8 @@ extern void scope_check_readStmt(read_stmt_t stmt);
 // all idenfifiers referenced in it have been declared
 // (if not, then produce an error)
 extern void scope_check_writeStmt(write_stmt_t stmt);
+
+void scope_check_callStmt(call_stmt_t stmt);
 
 // check the expresion to make sure that
 // all idenfifiers referenced in it have been declared

@@ -17,6 +17,8 @@ void scope_check_program(block_t prog)
 {
     symtab_enter_scope();
     scope_check_varDecls(prog.var_decls);
+    scope_check_constDecls(prog.const_decls);
+    scope_check_procDecls(prog.proc_decls);
     scope_check_stmt(prog.stmt);
     symtab_leave_scope();
 }
@@ -38,12 +40,15 @@ void scope_check_varDecl(var_decl_t vd)
 {
     scope_check_idents(vd.idents, 'v');
 }
-/*
+
 extern void scope_check_constDefs(const_defs_t cdefs)
 {
-    const_def_t cdef = cdefs.const_defs;
-    scope_check_constDef(cdef);
-
+    const_def_t *cdp = cdefs.const_defs;
+    while (cdp != NULL)
+    {
+        scope_check_constDef(*cdp);
+        cdp = cdp->next;
+    }
 }
 
 // constDef ::= ident = number
@@ -54,19 +59,57 @@ extern void scope_check_constDef(const_def_t cdef)
 
 extern void scope_check_constDecl(const_decl_t cdcl)
 {
-    const_defs_t *cdefs = cdcl.const_defs;
-    while(cdefs != NULL) {
-    scope_check_constDefs(*cdefs);
-    cdefs = cdefs->next;
-    }
+    scope_check_constDefs(cdcl.const_defs);
 }
 
 extern void scope_check_constDecls(const_decls_t cdcls)
 {
-    scope_check_constDecl(cdcls.const_decls);
+    const_decl_t *cdp = cdcls.const_decls;
+    while (cdp != NULL)
+    {
+        scope_check_constDecl(*cdp);
+        cdp = cdp->next;
+    }
 }
-*/
 
+extern void scope_check_procDecls(proc_decls_t pds)
+{
+    proc_decl_t *pdp = pds.proc_decls;
+    while (pdp != NULL)
+    {
+        scope_check_procDecl(*pdp);
+        pdp = pdp->next;
+    }
+}
+extern void scope_check_procDecl(proc_decl_t pd)
+{
+    // need to check name instead of ident
+    const char *name = pd.name;
+    scope_check_procedure(pd, name);
+}
+
+void scope_check_procedure(proc_decl_t pd, const char *name)
+{
+    scope_check_declare_procedure(pd, name);
+}
+void scope_check_declare_procedure(proc_decl_t pd, const char *name)
+{
+    if (symtab_declared_in_current_scope(name))
+    {
+        bail_with_prog_error(*(pd.file_loc), "procedure \"%s\" is already declared", name);
+    }
+    else
+    {
+        int ofst_cnt = symtab_scope_loc_count();
+        id_attrs *attrs = create_id_attrs(*(pd.file_loc), procedure_idk, ofst_cnt);
+        symtab_insert(name, attrs);
+    }
+}
+
+void scope_check_call_procedure(call_stmt_t cs, const char *name)
+{
+    // tf
+}
 // Add declarations for the names in ids
 // to current scope as type vt
 // reporting any duplicate declarations
@@ -89,16 +132,28 @@ void scope_check_declare_ident(ident_t id, char type)
     {
         // only variables in FLOAT
         if (type == 'v')
+        {
             bail_with_prog_error(*(id.file_loc), "variable \"%s\" is already declared as a variable", id.name);
+        }
+
         if (type == 'c')
-            bail_with_prog_error(*(id.file_loc), "variable \"%s\" is already declared as a constant ", id.name);
+        {
+            bail_with_prog_error(*(id.file_loc), "constant \"%s\" is already declared as a constant ", id.name);
+        }
     }
     else
     {
         int ofst_cnt = symtab_scope_loc_count();
-        id_attrs *attrs = create_id_attrs(*(id.file_loc), variable_idk, ofst_cnt);
-        // id_attrs_loc_create(*(id.file_loc), vt, ofst_cnt);
-        symtab_insert(id.name, attrs);
+        if (type == 'v')
+        {
+            id_attrs *attrs = create_id_attrs(*(id.file_loc), variable_idk, ofst_cnt);
+            symtab_insert(id.name, attrs);
+        }
+        if (type == 'c')
+        {
+            id_attrs *attrs = create_id_attrs(*(id.file_loc), constant_idk, ofst_cnt);
+            symtab_insert(id.name, attrs);
+        }
     }
 }
 
@@ -124,6 +179,8 @@ void scope_check_stmt(stmt_t stmt)
     case write_stmt:
         scope_check_writeStmt(stmt.data.write_stmt);
         break;
+    case call_stmt:
+        scope_check_callStmt(stmt.data.call_stmt);
     default:
         bail_with_error("Call to scope_check_stmt with an AST that is not a statement!");
         break;
@@ -135,8 +192,7 @@ void scope_check_stmt(stmt_t stmt)
 void scope_check_assignStmt(assign_stmt_t stmt)
 {
     const char *name = stmt.name;
-    id_use *idu = scope_check_ident_declared(*(stmt.file_loc),
-                                             name);
+    id_use *idu = scope_check_ident_declared(*(stmt.file_loc), name);
     assert(idu != NULL); // since would bail if not declared
     scope_check_expr(*(stmt.expr));
 }
@@ -191,6 +247,11 @@ void scope_check_writeStmt(write_stmt_t stmt)
     scope_check_expr(stmt.expr);
 }
 
+void scope_check_callStmt(call_stmt_t stmt)
+{
+    scope_check_ident_declared(*(stmt.file_loc), stmt.name);
+}
+
 // check the expresion to make sure that
 // all idenfifiers used have been declared
 // (if not, then produce an error)
@@ -233,16 +294,12 @@ void scope_check_ident_expr(ident_t id)
 // check that name has been declared,
 // if so, then return an id_use for it
 // otherwise, produce an error
-id_use *scope_check_ident_declared(
-    file_location floc,
-    const char *name)
+id_use *scope_check_ident_declared(file_location floc, const char *name)
 {
     id_use *ret = symtab_lookup(name);
     if (ret == NULL)
     {
-        bail_with_prog_error(floc,
-                             "identifier \"%s\" is not declared!",
-                             name);
+        bail_with_prog_error(floc, "identifer \"%s\" is not declared!", name);
     }
     return ret;
 }
