@@ -1,0 +1,10 @@
+const x = 121, y = 122, z = 123;
+var a, b, c;
+begin
+  if d = eId
+  then
+    f := x
+  else
+    f := y
+end
+.
