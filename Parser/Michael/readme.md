@@ -45,7 +45,7 @@ I'm trying to fix some of the other stuff to get max points but missing 6 cases 
 
 Here is what is left in case anyone wants to pull a 100<br>
 
-**declerrtest3** & **declerrtest4**<br>
+**declerrtest3** && **declerrtest4**<br>
 Something is wrong with the line number, I don't really know what to do with them because if I increment the line number it messes<br>
 up the other test cases
 
