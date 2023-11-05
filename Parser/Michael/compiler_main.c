@@ -3,8 +3,8 @@
 #include "parser.h"
 #include "lexer.h"
 #include "ast.h"
-// #include "symtab.h"
-// #include "scope_check.h"
+#include "symtab.h"
+#include "scope_check.h"
 #include "utilities.h"
 #include "unparser.h"
 
@@ -30,14 +30,15 @@ int main(int argc, char *argv[])
     lexer_init(argv[1]);
     // parsing
     block_t progast = parseProgram(argv[1]);
+    // printf("File name is: %s\n",argv[1]);
 
     // unparse to check on the AST
     unparseProgram(stdout, progast);
 
     // building symbol table
-    // symtab_initialize();
+    symtab_initialize();
     // check for duplicate declarations
-    // scope_check_program(progast);
+    scope_check_program(progast);
 
     return EXIT_SUCCESS;
 }

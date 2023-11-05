@@ -88,11 +88,11 @@ extern void scope_check_procDecl(proc_decl_t pd)
     scope_check_procedure(pd, name);
 }
 
-void scope_check_procedure(proc_decl_t pd, const char *name)
+extern void scope_check_procedure(proc_decl_t pd, const char *name)
 {
     scope_check_declare_procedure(pd, name);
 }
-void scope_check_declare_procedure(proc_decl_t pd, const char *name)
+extern void scope_check_declare_procedure(proc_decl_t pd, const char *name)
 {
     if (symtab_declared_in_current_scope(name))
     {
@@ -106,14 +106,14 @@ void scope_check_declare_procedure(proc_decl_t pd, const char *name)
     }
 }
 
-void scope_check_call_procedure(call_stmt_t cs, const char *name)
+extern void scope_check_call_procedure(call_stmt_t cs, const char *name)
 {
     // tf
 }
 // Add declarations for the names in ids
 // to current scope as type vt
 // reporting any duplicate declarations
-void scope_check_idents(idents_t ids, char type)
+extern void scope_check_idents(idents_t ids, char type)
 {
     ident_t *idp = ids.idents;
     while (idp != NULL)
@@ -130,15 +130,13 @@ void scope_check_declare_ident(ident_t id, char type)
 {
     if (symtab_declared_in_current_scope(id.name))
     {
-        // only variables in FLOAT
-        if (type == 'v')
+        if (type == 'v') 
         {
             bail_with_prog_error(*(id.file_loc), "variable \"%s\" is already declared as a variable", id.name);
-        }
-
-        if (type == 'c')
+        } 
+        else if (type == 'c') 
         {
-            bail_with_prog_error(*(id.file_loc), "constant \"%s\" is already declared as a constant ", id.name);
+            bail_with_prog_error(*(id.file_loc), "constant \"%s\" is already declared as a constant", id.name);
         }
     }
     else
@@ -181,8 +179,10 @@ void scope_check_stmt(stmt_t stmt)
         break;
     case call_stmt:
         scope_check_callStmt(stmt.data.call_stmt);
+    case skip_stmt:
+        scope_check_skipStmt(stmt.data.skip_stmt);
+        break;
     default:
-        bail_with_error("Call to scope_check_stmt with an AST that is not a statement!");
         break;
     }
 }
@@ -250,6 +250,12 @@ void scope_check_writeStmt(write_stmt_t stmt)
 void scope_check_callStmt(call_stmt_t stmt)
 {
     scope_check_ident_declared(*(stmt.file_loc), stmt.name);
+}
+
+// Check the skip statement to ensure it has no undeclared identifiers
+void scope_check_skipStmt(skip_stmt_t stmt)
+{
+    // No identifiers or expressions in a skip statement, so nothing to check
 }
 
 // check the expresion to make sure that

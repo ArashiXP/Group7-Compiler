@@ -34,3 +34,11 @@ For now I finished the first part of the parser, meaning all non-decl stuff is d
 For now I fixed the main code so the non-decl test cases pass.<br>
 I'll take over and try to finish part 2.<br>
 If anyone wants to give it a try heres the baseline<br>
+
+Doing some debugging and got most of it to work<br>
+
+we are at 49/56 test cases leaving only 7 left<br>
+
+a problem I saw was that declerrtest 3 and 4 their line numbers is off, if anyone can fix this please do<br>
+
+I'm trying to fix some of the other stuff to get max points but missing 7 cases can't be that bad<br>
