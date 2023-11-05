@@ -88,11 +88,11 @@ extern void scope_check_procDecl(proc_decl_t pd)
     scope_check_procedure(pd, name);
 }
 
-void scope_check_procedure(proc_decl_t pd, const char *name)
+extern void scope_check_procedure(proc_decl_t pd, const char *name)
 {
     scope_check_declare_procedure(pd, name);
 }
-void scope_check_declare_procedure(proc_decl_t pd, const char *name)
+extern void scope_check_declare_procedure(proc_decl_t pd, const char *name)
 {
     if (symtab_declared_in_current_scope(name))
     {
@@ -106,14 +106,14 @@ void scope_check_declare_procedure(proc_decl_t pd, const char *name)
     }
 }
 
-void scope_check_call_procedure(call_stmt_t cs, const char *name)
+extern void scope_check_call_procedure(call_stmt_t cs, const char *name)
 {
     // tf
 }
 // Add declarations for the names in ids
 // to current scope as type vt
 // reporting any duplicate declarations
-void scope_check_idents(idents_t ids, char type)
+extern void scope_check_idents(idents_t ids, char type)
 {
     ident_t *idp = ids.idents;
     while (idp != NULL)
@@ -131,7 +131,7 @@ void scope_check_declare_ident(ident_t id, char type)
     if (symtab_declared_in_current_scope(id.name))
     {
         // only variables in FLOAT
-        if (type == 'v')
+        if (type == 'v') //&& strcmp("variable_idk", kind2str())
         {
             bail_with_prog_error(*(id.file_loc), "variable \"%s\" is already declared as a variable", id.name);
         }

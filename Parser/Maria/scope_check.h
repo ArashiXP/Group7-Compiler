@@ -29,10 +29,10 @@ extern void scope_check_constDecls(const_decls_t cdcls);
 
 extern void scope_check_procDecls(proc_decls_t pds);
 extern void scope_check_procDecl(proc_decl_t pd);
-void scope_check_procedure(proc_decl_t pd, const char *name);
-void scope_check_declare_procedure(proc_decl_t pd, const char *name);
+extern void scope_check_procedure(proc_decl_t pd, const char *name);
+extern void scope_check_declare_procedure(proc_decl_t pd, const char *name);
 
-void scope_check_call_procedure(call_stmt_t cs, const char *name);
+extern void scope_check_call_procedure(call_stmt_t cs, const char *name);
 
 // Add a declaration of the name id.name with the type vt
 // to the current scope's symbol table,
