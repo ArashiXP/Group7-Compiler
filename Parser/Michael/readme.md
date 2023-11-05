@@ -37,8 +37,30 @@ If anyone wants to give it a try heres the baseline<br>
 
 Doing some debugging and got most of it to work<br>
 
-we are at 49/56 test cases leaving only 7 left<br>
+we are at 50/56 test cases leaving only 6 left<br>
 
 a problem I saw was that declerrtest 3 and 4 their line numbers is off, if anyone can fix this please do<br>
 
-I'm trying to fix some of the other stuff to get max points but missing 7 cases can't be that bad<br>
+I'm trying to fix some of the other stuff to get max points but missing 6 cases can't be that bad<br>
+
+Here is what is left in case anyone wants to pull a 100<br>
+
+**declerrtest3** & **declerrtest4**<br>
+Something is wrong with the line number, I don't really know what to do with them because if I increment the line number it messes<br>
+up the other test cases
+
+**declerrtest6**<br>
+Something is wrong with the begin scope check, we can't change professors declaration of the begin statment in ast.h, so I <br>
+don't know how we can fix it
+
+**declerrtest7**<br>
+Most likely another issue with the begin statments, I bruteforced the if function to make it work, but it may be interferring<br>
+with some of the other cases, but none of the ones that already work
+
+**declerrtest9**<br>
+Something to do with the if scope check, needs to account for odd?
+
+**declerrtestA**<br>
+Another issue with the if statment
+
+
