@@ -29,3 +29,8 @@ is printing mostly all the right things, we just have to fix it printing out tok
 
 10/30 <br>
 For now I finished the first part of the parser, meaning all non-decl stuff is done I'll keep at part 2, I just wanted to push this now so if anyone wants to do something they have the working code
+
+11/5
+For now I fixed the main code so the non-decl test cases pass.<br>
+I'll take over and try to finish part 2.<br>
+If anyone wants to give it a try heres the baseline<br>

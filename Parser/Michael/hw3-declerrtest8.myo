@@ -1,0 +1,8 @@
+const y = 122, z = 123;
+var a, b, c;
+begin
+  a := 3;
+  y := ((z * a) + (b / c));
+  write x
+end
+.
