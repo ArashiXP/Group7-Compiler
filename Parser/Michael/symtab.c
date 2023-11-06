@@ -145,26 +145,3 @@ id_use *symtab_lookup(const char *name)
     }
     return NULL;
 }
-
-// We'll use lexical addresses in HW4...
-// Requires: symtab_declared(name)
-// Return (a pointer to) the lexical address of the given name
-// or NULL if there is no association for name.
-/*
-lexical_address *symtab_lexical_address(const char *name)
-{
-    // maintaining: -1 <= level <= symtab_top_idx;
-    // maintaining: (for all int j:
-    //                level < j <= symtab_top_idx
-    //                   ==> !scope_declared(symtab[j], name))
-    for (int level = symtab_top_idx; 0 <= level; level--) {
-    id_attrs *attrs = scope_lookup(symtab[level], name);
-    if (attrs != NULL) {
-        return lexical_address_create(symtab_top_idx - level,
-                      attrs->loc_offset);
-    }
-    }
-    bail_with_error("Couldn't find %s for symtab_lexical_address!", name);
-    return NULL;
-}
-*/
