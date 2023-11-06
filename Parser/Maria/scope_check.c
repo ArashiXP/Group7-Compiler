@@ -106,10 +106,6 @@ extern void scope_check_declare_procedure(proc_decl_t pd, const char *name)
     }
 }
 
-extern void scope_check_call_procedure(call_stmt_t cs, const char *name)
-{
-    // tf
-}
 // Add declarations for the names in ids
 // to current scope as type vt
 // reporting any duplicate declarations
@@ -130,15 +126,24 @@ void scope_check_declare_ident(ident_t id, char type)
 {
     if (symtab_declared_in_current_scope(id.name))
     {
-        // only variables in FLOAT
-        if (type == 'v') //&& strcmp("variable_idk", kind2str())
+        const char *typeIdk = kind2str(symtab_lookup(id.name)->attrs->kind);
+        file_location idLoc = symtab_lookup(id.name)->attrs->file_loc;
+        // printf("\nTYPEIDK: %s, TYPE: %c\n", typeIdk, type);
+        if (type == 'v' && strcmp("variable", typeIdk) == 0) //&& strcmp("variable", typeIdk)
         {
             bail_with_prog_error(*(id.file_loc), "variable \"%s\" is already declared as a variable", id.name);
         }
-
-        if (type == 'c')
+        else if (type == 'v' && strcmp("constant", typeIdk) == 0) //&& strcmp("variable", typeIdk)
         {
-            bail_with_prog_error(*(id.file_loc), "constant \"%s\" is already declared as a constant ", id.name);
+            bail_with_prog_error((idLoc), "variable \"%s\" is already declared as a constant", id.name);
+        }
+        else if (type == 'c' && strcmp("constant", typeIdk) == 0)
+        {
+            bail_with_prog_error(*(id.file_loc), "constant \"%s\" is already declared as a constant", id.name);
+        }
+        else if (type == 'c' && strcmp("variable", typeIdk) == 0)
+        {
+            bail_with_prog_error((idLoc), "variable \"%s\" is already declared as a constant", id.name);
         }
     }
     else
@@ -181,8 +186,10 @@ void scope_check_stmt(stmt_t stmt)
         break;
     case call_stmt:
         scope_check_callStmt(stmt.data.call_stmt);
+    case skip_stmt:
+        scope_check_skipStmt(stmt.data.skip_stmt);
+        break;
     default:
-        bail_with_error("Call to scope_check_stmt with an AST that is not a statement!");
         break;
     }
 }
@@ -203,7 +210,12 @@ void scope_check_assignStmt(assign_stmt_t stmt)
 void scope_check_beginStmt(begin_stmt_t stmt)
 {
     symtab_enter_scope();
-    // scope_check_varDecls(stmt.var_decls);
+
+    /*
+        Need to check for declarations
+    */
+
+    // Traverse and check statements in the nested scopes
     scope_check_stmts(stmt.stmts);
     symtab_leave_scope();
 }
@@ -226,9 +238,23 @@ void scope_check_stmts(stmts_t stmts)
 // (if not, then produce an error)
 void scope_check_ifStmt(if_stmt_t stmt)
 {
-    // scope_check_expr(stmt.expr);
-    // scope_check_stmt(*(stmt.body));
-    // printf("REMEBER TO RE DO IF STMT SCOPE CHECK");
+    // Check for undeclared identifiers in the condition
+    scope_check_expr(stmt.condition.data.rel_op_cond.expr1);
+    // scope_check_expr(stmt.condition.data.rel_op_cond.expr2);
+    scope_check_expr(stmt.condition.data.odd_cond.expr);
+
+    // Enter a new scope for the "then" branch
+    symtab_enter_scope();
+    scope_check_stmt(*(stmt.then_stmt));
+    symtab_leave_scope();
+
+    if (stmt.else_stmt != NULL)
+    {
+        // Enter a new scope for the "else" branch, if it exists
+        symtab_enter_scope();
+        scope_check_stmt(*(stmt.else_stmt));
+        symtab_leave_scope();
+    }
 }
 
 // check the statement to make sure that
@@ -250,6 +276,12 @@ void scope_check_writeStmt(write_stmt_t stmt)
 void scope_check_callStmt(call_stmt_t stmt)
 {
     scope_check_ident_declared(*(stmt.file_loc), stmt.name);
+}
+
+// Check the skip statement to ensure it has no undeclared identifiers
+void scope_check_skipStmt(skip_stmt_t stmt)
+{
+    // No identifiers or expressions in a skip statement, so nothing to check
 }
 
 // check the expresion to make sure that
