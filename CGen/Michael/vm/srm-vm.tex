@@ -1,4 +1,4 @@
-% $Id: srm-vm.tex,v 1.61 2023/11/14 18:25:32 leavens Exp leavens $
+% $Id: srm-vm.tex,v 1.62 2023/11/15 19:41:22 leavens Exp leavens $
 \documentclass[11pt,letterpaper]{article}
 \usepackage[T1]{fontenc}
 \usepackage{times}
@@ -60,7 +60,7 @@
 \bibliographystyle{plain}
 %
 \title{Simplified RISC Machine Manual \\
-       (\lstinline!$Revision: 1.61 $!)}
+       (\lstinline!$Revision: 1.62 $!)}
 \author{Gary T. Leavens \\
         Leavens@ucf.edu}
 \begin{document}
@@ -729,6 +729,8 @@ code & name  & arg. reg. & Effect (in terms of C std. library) \\
 10   & EXIT  & - & \texttt{exit(0) // halt} \\
 \hline
  4   & PSTR  & \AZERO & $\GPR{\VZERO} \GETS $ \texttt{printf("\%s",\&$\MEMORY{\GPR{\AZERO}}$)} \\
+\hline
+ 5   & PINT  & \AZERO & $\GPR{\VZERO} \GETS $ \texttt{printf("\%d",\GPR{\AZERO})} \\
 \hline
 11   & PCH   & \AZERO & $\GPR{\VZERO} \GETS $\texttt{fputc($\GPR{\AZERO}$,stdout)} \\
 \hline

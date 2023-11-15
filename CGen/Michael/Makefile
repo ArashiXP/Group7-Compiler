@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.47 2023/11/15 07:58:27 leavens Exp leavens $
+# $Id: Makefile,v 1.48 2023/11/15 17:00:21 leavens Exp leavens $
 # Makefile for PL/0 compiler and code generation in COP 3402
 
 # Add .exe to the end of target to get that suffix in the rules
@@ -103,7 +103,7 @@ cleanall: clean
 # The .myto files are outputs from running compiled programs
 # with the VM's -t option (useful for debugging)
 # The use of cat char-inputs.txt | allows read statments to not hang
-.PRECIOUS: %.myvo
+.PRECIOUS: %.myto
 %.myto: %.bof $(VM)
 	cat char-inputs.txt | $(RUNVM) -t $< > $@ 2>&1
 
