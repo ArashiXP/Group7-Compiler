@@ -1,3 +1,10 @@
+// COP3402
+// Project Group 7: 
+// Michael Nguyen, Ryan Latour, Maria Talhaferro Artur
+// **************
+// Program: compiler_main.c symtab.c scope.c scope_check.c
+// **************
+// Implement a parser using bison and check for declaration errors
 #include <stdio.h>
 #include <stdlib.h>
 #include "parser.h"
@@ -30,6 +37,7 @@ int main(int argc, char *argv[])
     lexer_init(argv[1]);
     // parsing
     block_t progast = parseProgram(argv[1]);
+    // printf("File name is: %s\n",argv[1]);
 
     // unparse to check on the AST
     unparseProgram(stdout, progast);
