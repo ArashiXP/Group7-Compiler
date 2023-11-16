@@ -148,6 +148,7 @@ void scope_check_declare_ident(ident_t id, char type)
     }
     else
     {
+        //
         int ofst_cnt = symtab_scope_loc_count();
         if (type == 'v')
         {
