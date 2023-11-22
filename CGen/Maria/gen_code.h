@@ -7,9 +7,12 @@
 #include "instruction.h"
 #include "code.h"
 
-
 // Initialize the code generator
 extern void gen_code_initialize();
+
+extern void gen_code_output_seq(BOFFILE bf, code_seq cs);
+extern BOFHeader gen_code_program_header(code_seq main_cs);
+extern void gen_code_output_program(BOFFILE bf, code_seq main_cs);
 
 // Requires: bf if open for writing in binary
 // Generate code for prog into bf
