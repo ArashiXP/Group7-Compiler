@@ -1,7 +1,6 @@
 /* $Id: gen_code.c,v 1.23 2023/11/14 05:16:29 leavens Exp leavens $ */
 #include <limits.h>
 #include <string.h>
-#include "float.tab.h"
 #include "ast.h"
 #include "code.h"
 #include "id_use.h"
@@ -9,6 +8,7 @@
 #include "gen_code.h"
 #include "utilities.h"
 #include "regname.h"
+#include "bof.h"
 
 #define STACK_SPACE 4096
 
@@ -40,11 +40,10 @@ static BOFHeader gen_code_program_header(code_seq main_cs)
     ret.text_length = code_seq_size(main_cs) * BYTES_PER_WORD;
     int dsa = MAX(ret.text_length, 1024);
     ret.data_start_address = dsa;
-    ret.ints_length = 0; // FLOAT has no int literals
-    ret.floats_length = literal_table_size() * BYTES_PER_WORD;
+    ret.data_length = literal_table_size() * BYTES_PER_WORD;
     int sba = dsa
 	+ ret.data_start_address
-	+ ret.ints_length + ret.floats_length + STACK_SPACE;
+	+ ret.data_length + STACK_SPACE;
     ret.stack_bottom_addr = sba;
     return ret;
 }
@@ -53,9 +52,9 @@ static void gen_code_output_literals(BOFFILE bf)
 {
     literal_table_start_iteration();
     while (literal_table_iteration_has_next()) {
-	float_type w = literal_table_iteration_next();
+    word_type w = literal_table_iteration_next();
 	// debug_print("Writing literal %f to BOF file\n", w);
-	bof_write_float(bf, w);
+	bof_write_word(bf, w);
     }
     literal_table_end_iteration(); // not necessary
 }
@@ -74,7 +73,7 @@ static void gen_code_output_program(BOFFILE bf, code_seq main_cs)
 
 // Requires: bf if open for writing in binary
 // Generate code for prog into bf
-void gen_code_program(BOFFILE bf, program_t prog)
+void gen_code_program(BOFFILE bf, block_t prog)
 {
     code_seq main_cs;
     // We want to make the main program's AR look like all blocks... so:
@@ -118,15 +117,14 @@ code_seq gen_code_var_decls(var_decls_t vds)
 // (one to allocate space and another to initialize that space)
 code_seq gen_code_var_decl(var_decl_t vd)
 {
-    return gen_code_idents(vd.idents, vd.type);
+    return gen_code_idents(vd.idents);
 }
 
 // Generate code for the identififers in idents with type vt
 // in reverse order (so the first declared are allocated last).
 // There are 2 instructions generated for each identifier declared
 // (one to allocate space and another to initialize that space)
-code_seq gen_code_idents(idents_t idents,
-			 type_exp_e vt)
+code_seq gen_code_idents(idents_t idents)
 {
     code_seq ret = code_seq_empty();
     ident_t *idp = idents.idents;
@@ -134,7 +132,7 @@ code_seq gen_code_idents(idents_t idents,
 	code_seq alloc_and_init
 	    = code_seq_singleton(code_addi(SP, SP,
 					   - BYTES_PER_WORD));
-	switch (vt) {
+	/*switch (vt) {
 	case float_te:
 	    alloc_and_init
 		= code_seq_add_to_end(alloc_and_init,
@@ -149,7 +147,12 @@ code_seq gen_code_idents(idents_t idents,
 	    bail_with_error("Bad type_exp_e (%d) passed to gen_code_idents!",
 			    vt);
 	    break;
-	}
+	}*/
+ 
+   alloc_and_init
+		= code_seq_add_to_end(alloc_and_init,
+				      code_sw(SP, 0, 0));
+                                   
 	// Generate these in revese order,
 	// so addressing works propertly
 	ret = code_seq_concat(alloc_and_init, ret);
@@ -195,14 +198,16 @@ code_seq gen_code_assign_stmt(assign_stmt_t stmt)
     ret = gen_code_expr(*(stmt.expr));
     assert(stmt.idu != NULL);
     assert(id_use_get_attrs(stmt.idu) != NULL);
-    type_exp_e typ = id_use_get_attrs(stmt.idu)->type;
-    ret = code_seq_concat(ret, code_pop_stack_into_reg(V0, typ));
+    //type_exp_e typ = id_use_get_attrs(stmt.idu)->type;
+    ret = code_seq_concat(ret, code_pop_stack_into_reg(V0));
     // put frame pointer from the lexical address of the name
     // (using stmt.idu) into $t9
     ret = code_seq_concat(ret,
 			  code_compute_fp(T9, stmt.idu->levelsOutward));
     unsigned int offset_count = id_use_get_attrs(stmt.idu)->offset_count;
     assert(offset_count <= USHRT_MAX); // it has to fit!
+    // Comment float stuff
+    /*
     switch (id_use_get_attrs(stmt.idu)->type) {
     case float_te:
 	ret = code_seq_add_to_end(ret,
@@ -216,7 +221,12 @@ code_seq gen_code_assign_stmt(assign_stmt_t stmt)
 	bail_with_error("Bad var_type (%d) for ident in assignment stmt!",
 			id_use_get_attrs(stmt.idu)->type);
 	break;
-    }
+ }
+ */
+   
+     ret = code_seq_add_to_end(ret,
+				  code_sw(T9, V0, offset_count));
+   
     return ret;
 }
 
