@@ -5,10 +5,12 @@
 #include "utilities.h"
 
 // constant table entries
+// **I added the word_type value to this struct to make the code work
 typedef struct literal_table_entry_s
 {
     struct literal_table_entry_s *next;
     const char *text;
+    word_type value;
     unsigned int offset;
 } literal_table_entry_t;
 
@@ -86,6 +88,7 @@ unsigned int literal_table_lookup(const char *val_string, word_type value)
     literal_table_entry_t *new_entry = (literal_table_entry_t *)malloc(sizeof(literal_table_entry_t));
     new_entry->text = val_string;
     new_entry->next = NULL;
+    new_entry->value = value;
     ret = next_word_offset;
     new_entry->offset = next_word_offset++;
     if (new_entry == NULL)
@@ -112,20 +115,38 @@ unsigned int literal_table_lookup(const char *val_string, word_type value)
 // which can extract the elements
 void literal_table_start_iteration()
 {
+    if (iterating)
+    {
+        bail_with_error("Attempt to start literal_table iterating when already iterating!");
+    }
+    iterating = true;
+    iteration_next = first;
 }
 
 // End the current iteration over the literal table.
 void literal_table_end_iteration()
 {
+    iterating = false;
 }
 
 // Is there another literal in the literal table?
 bool literal_table_iteration_has_next()
 {
+    // literal_table_okay();
+    bool ret = (iteration_next != NULL);
+    if (!ret)
+    {
+        iterating = false;
+    }
+    return ret;
 }
 
 // Return the next word_type in the literal table
 // and advance the iteration
 word_type literal_table_iteration_next()
 {
+    assert(iteration_next != NULL);
+    word_type ret = iteration_next->value;
+    iteration_next = iteration_next->next;
+    return ret;
 }

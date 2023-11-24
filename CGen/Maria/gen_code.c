@@ -29,15 +29,27 @@ void gen_code_output_seq(BOFFILE bf, code_seq cs)
 BOFHeader gen_code_program_header(code_seq main_cs)
 {
     BOFHeader ret;
-    strncpy(ret.magic, "FBF", 4); // for FLOAT SRM
+    // strncpy(ret.magic, "FBF", 4); // for FLOAT SRM
     ret.text_start_address = 0;
     // remember, the unit of length in the BOF format is a byte!
     ret.text_length = code_seq_size(main_cs) * BYTES_PER_WORD;
     int dsa = MAX(ret.text_length, 1024);
+    ret.data_length = literal_table_size() * BYTES_PER_WORD;
     ret.data_start_address = dsa;
-    int sba = dsa + ret.data_start_address + STACK_SPACE;
+    int sba = dsa + ret.data_start_address + ret.data_length + STACK_SPACE;
     ret.stack_bottom_addr = sba;
     return ret;
+}
+
+static void gen_code_output_literals(BOFFILE bf)
+{
+    literal_table_start_iteration();
+    while (literal_table_iteration_has_next())
+    {
+        word_type w = literal_table_iteration_next();
+        bof_write_word(bf, w);
+    }
+    literal_table_end_iteration(); // not necessary
 }
 
 void gen_code_output_program(BOFFILE bf, code_seq main_cs)
@@ -45,6 +57,7 @@ void gen_code_output_program(BOFFILE bf, code_seq main_cs)
     BOFHeader bfh = gen_code_program_header(main_cs);
     bof_write_header(bf, bfh);
     gen_code_output_seq(bf, main_cs);
+    gen_code_output_literals(bf);
     bof_close(bf);
 }
 
@@ -66,19 +79,27 @@ void gen_code_program(BOFFILE bf, block_t prog)
 // Generate code for the given AST
 code_seq gen_code_block(block_t blk)
 {
-    // Generate code for const declarations
-    code_seq ret = code_seq_concat(ret, gen_code_var_decls(blk.var_decls));
+    // this was mostly copied from the float calculator so I'm not sure how it works exactly
+    // it just does
 
-    // Generate code for var declarations
-    // ret = gen_code_const_decls(blk.const_decls);
+    code_seq ret;
+    // We want to make the main program's AR look like all blocks... so:
+    // allocate space and initialize any variables
+    ret = gen_code_var_decls(blk.var_decls);
 
-    // Generate code for procedure declarations
-    // ret = code_seq_concat(ret, gen_code_proc_decls(blk.proc_decls));
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //       NEED TO ADD OTHER PARTS OF THE AST BLOCK
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    // Generate code for the statement
-    ret = (ret, gen_code_stmt(blk.stmt));
+    int vars_len_in_bytes = (code_seq_size(ret) / 2) * BYTES_PER_WORD;
+    // there is no static link for the program as a whole,
+    // so nothing to do for saving FP into A0 as would be done for a block
+    ret = code_seq_concat(ret, code_save_registers_for_AR());
+    ret = code_seq_concat(ret, gen_code_stmt(blk.stmt));
+    ret = code_seq_concat(ret, code_restore_registers_from_AR());
+    ret = code_seq_concat(ret, code_deallocate_stack_space(vars_len_in_bytes));
+    ret = code_seq_add_to_end(ret, code_exit());
 
-    // Concatenate the generated code sequences
     return ret;
 }
 
@@ -87,28 +108,28 @@ code_seq gen_code_block(block_t blk)
 // (one to allocate space and two to initialize that space)
 code_seq gen_code_const_decls(const_decls_t cds)
 {
-    bail_with_error("TODO: no implementation of gen_code_const_decls yet!");
+    // bail_with_error("TODO: no implementation of gen_code_const_decls yet!");
     return code_seq_empty();
 }
 
 // Generate code for the const-decl, cd
 code_seq gen_code_const_decl(const_decl_t cd)
 {
-    bail_with_error("TODO: no implementation of gen_code_const_decl yet!");
+    // bail_with_error("TODO: no implementation of gen_code_const_decl yet!");
     return code_seq_empty();
 }
 
 // Generate code for the const-defs, cdfs
 code_seq gen_code_const_defs(const_defs_t cdfs)
 {
-    bail_with_error("TODO: no implementation of gen_code_const_defs yet!");
+    // bail_with_error("TODO: no implementation of gen_code_const_defs yet!");
     return code_seq_empty();
 }
 
 // Generate code for the const-def, cdf
 code_seq gen_code_const_def(const_def_t cdf)
 {
-    bail_with_error("TODO: no implementation of gen_code_const_def yet!");
+    // bail_with_error("TODO: no implementation of gen_code_const_def yet!");
     return code_seq_empty();
 }
 
@@ -162,14 +183,14 @@ code_seq gen_code_idents(idents_t idents)
 // (Stub for:) Generate code for the procedure declarations
 code_seq gen_code_proc_decls(proc_decls_t pds)
 {
-    bail_with_error("TODO: no implementation of gen_code_proc_decls yet!");
+    // bail_with_error("TODO: no implementation of gen_code_proc_decls yet!");
     return code_seq_empty();
 }
 
 // (Stub for:) Generate code for a procedure declaration
 code_seq gen_code_proc_decl(proc_decl_t pd)
 {
-    bail_with_error("TODO: no implementation of gen_code_proc_decl yet!");
+    // bail_with_error("TODO: no implementation of gen_code_proc_decl yet!");
     return code_seq_empty();
 }
 
@@ -216,21 +237,21 @@ code_seq gen_code_stmt(stmt_t stmt)
 // Generate code for stmt
 code_seq gen_code_assign_stmt(assign_stmt_t stmt)
 {
-    bail_with_error("TODO: no implementation of gen_code_assign_stmt yet!");
+    // bail_with_error("TODO: no implementation of gen_code_assign_stmt yet!");
     return code_seq_empty();
 }
 
 // Generate code for stmt
 code_seq gen_code_call_stmt(call_stmt_t stmt)
 {
-    bail_with_error("TODO: no implementation of gen_code_call_stmt yet!");
+    // bail_with_error("TODO: no implementation of gen_code_call_stmt yet!");
     return code_seq_empty();
 }
 
 // Generate code for stmt
 code_seq gen_code_begin_stmt(begin_stmt_t stmt)
 {
-    bail_with_error("TODO: no implementation of gen_code_begin_stmt yet!");
+    // bail_with_error("TODO: no implementation of gen_code_begin_stmt yet!");
     return code_seq_empty();
 }
 
@@ -250,21 +271,21 @@ code_seq gen_code_stmts(stmts_t stmts)
 // Generate code for the if-statment given by stmt
 code_seq gen_code_if_stmt(if_stmt_t stmt)
 {
-    bail_with_error("TODO: no implementation of gen_code_if_stmt yet!");
+    // bail_with_error("TODO: no implementation of gen_code_if_stmt yet!");
     return code_seq_empty();
 }
 
 // Generate code for the if-statment given by stmt
 code_seq gen_code_while_stmt(while_stmt_t stmt)
 {
-    bail_with_error("TODO: no implementation of gen_code_while_stmt yet!");
+    // bail_with_error("TODO: no implementation of gen_code_while_stmt yet!");
     return code_seq_empty();
 }
 
 // Generate code for the read statment given by stmt
 code_seq gen_code_read_stmt(read_stmt_t stmt)
 {
-    bail_with_error("TODO: no implementation of gen_code_read_stmt yet!");
+    // bail_with_error("TODO: no implementation of gen_code_read_stmt yet!");
     return code_seq_empty();
 }
 
@@ -298,7 +319,7 @@ code_seq gen_code_skip_stmt(skip_stmt_t stmt)
 // May modify HI,LO when executed
 code_seq gen_code_condition(condition_t cond)
 {
-    bail_with_error("TODO: no implementation of gen_code_code_condition yet!");
+    // bail_with_error("TODO: no implementation of gen_code_code_condition yet!");
     return code_seq_empty();
 }
 
@@ -308,7 +329,7 @@ code_seq gen_code_condition(condition_t cond)
 // Modifies SP, HI,LO when executed
 code_seq gen_code_odd_condition(odd_condition_t cond)
 {
-    bail_with_error("TODO: no implementation of gen_code_odd_condition yet!");
+    // bail_with_error("TODO: no implementation of gen_code_odd_condition yet!");
     return code_seq_empty();
 }
 
@@ -318,7 +339,7 @@ code_seq gen_code_odd_condition(odd_condition_t cond)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_rel_op_condition(rel_op_condition_t cond)
 {
-    bail_with_error("TODO: no implementation of gen_code_rel_op_condition yet!");
+    // bail_with_error("TODO: no implementation of gen_code_rel_op_condition yet!");
     return code_seq_empty();
 }
 
@@ -329,7 +350,7 @@ code_seq gen_code_rel_op_condition(rel_op_condition_t cond)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_rel_op(token_t rel_op)
 {
-    bail_with_error("TODO: no implementation of gen_code_rel_op yet!");
+    // bail_with_error("TODO: no implementation of gen_code_rel_op yet!");
     return code_seq_empty();
 }
 
@@ -364,7 +385,7 @@ code_seq gen_code_expr(expr_t exp)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_binary_op_expr(binary_op_expr_t exp)
 {
-    bail_with_error("TODO: no implementation of gen_code_binary_op_expr yet!");
+    // bail_with_error("TODO: no implementation of gen_code_binary_op_expr yet!");
     return code_seq_empty();
 }
 
@@ -375,7 +396,7 @@ code_seq gen_code_binary_op_expr(binary_op_expr_t exp)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_arith_op(token_t arith_op)
 {
-    bail_with_error("TODO: no implementation of gen_code_arith_op yet!");
+    // bail_with_error("TODO: no implementation of gen_code_arith_op yet!");
     return code_seq_empty();
 }
 
@@ -384,7 +405,7 @@ code_seq gen_code_arith_op(token_t arith_op)
 // Modifies T9, V0, and SP when executed
 code_seq gen_code_ident(ident_t id)
 {
-    bail_with_error("TODO: no implementation of gen_code_ident yet!");
+    // bail_with_error("TODO: no implementation of gen_code_ident yet!");
     return code_seq_empty();
 }
 

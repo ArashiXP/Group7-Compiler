@@ -10,9 +10,11 @@
 // Initialize the code generator
 extern void gen_code_initialize();
 
+// all functions that I added
 extern void gen_code_output_seq(BOFFILE bf, code_seq cs);
 extern BOFHeader gen_code_program_header(code_seq main_cs);
 extern void gen_code_output_program(BOFFILE bf, code_seq main_cs);
+static void gen_code_output_literals(BOFFILE bf);
 
 // Requires: bf if open for writing in binary
 // Generate code for prog into bf
