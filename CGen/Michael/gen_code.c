@@ -415,10 +415,11 @@ code_seq gen_code_condition(condition_t cond)
             conditionCode = code_seq_concat(conditionCode, code_seq_singleton(code_push_reg_on_stack(V0)));
             break;
         }
-        case ck_rel: {
+        case ck_rel: 
+        {
             // Generate code for relational condition (e.g., x < y)
             rel_op_condition_t relOpCond = cond.data.rel_op_cond;
-            token_t relOp = relOpCond.rel_op;
+
 
             // Generate code for the left and right expressions
             code_seq leftCode = gen_code_expr(relOpCond.expr1);
@@ -432,27 +433,13 @@ code_seq gen_code_condition(condition_t cond)
             conditionCode = code_seq_concat(conditionCode, code_seq_singleton(code_pop_stack_into_reg(V0)));
             conditionCode = code_seq_concat(conditionCode, code_seq_singleton(code_pop_stack_into_reg(AT)));
 
-            // Compare the values in V0 and AT based on the relational operator
-            switch (relOp.code) {
-                case 33: // Change this to the appropriate operator code
-                    conditionCode = code_seq_concat(conditionCode, code_seq_singleton(code_sll(V0, AT, V0)));
-                    break;
-                case 35: // Change this to the appropriate operator code
-                    conditionCode = code_seq_concat(conditionCode, code_seq_singleton(code_sll(V0, AT, V0)));
-                    break;
-                // Add more cases for other relational operators as needed
 
-                default:
-                    // Handle unsupported relational operators or raise an error
-                    break;
-            }
 
             // Push the result of the comparison back onto the stack
             conditionCode = code_seq_concat(conditionCode, code_seq_singleton(code_push_reg_on_stack(V0)));
             break;
         }
         default:
-            // Handle other condition types if needed
             break;
     }
 
