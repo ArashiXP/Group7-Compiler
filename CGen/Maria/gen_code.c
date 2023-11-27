@@ -9,6 +9,8 @@
 #include "id_use.h"
 #include "utilities.h"
 #include "regname.h"
+#include "symtab.h"
+#include "pl0.tab.h"
 
 #define STACK_SPACE 4096
 
@@ -86,9 +88,9 @@ code_seq gen_code_block(block_t blk)
     code_seq ret;
     // We want to make the main program's AR look like all blocks... so:
     // allocate space and initialize any variables
-    // ret = gen_code_const_decls(blk.const_decls);
-    ret = gen_code_var_decls(blk.var_decls);
-    // ret = code_seq_concat(ret, gen_code_var_decls(blk.var_decls));
+    ret = gen_code_const_decls(blk.const_decls);
+    // ret = gen_code_var_decls(blk.var_decls);
+    ret = code_seq_concat(ret, gen_code_var_decls(blk.var_decls));
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //       NEED TO ADD OTHER PARTS OF THE AST BLOCK
@@ -137,9 +139,11 @@ code_seq gen_code_const_defs(const_defs_t cdfs)
     const_def_t *cdf = cdfs.const_defs;
     while (cdf != NULL)
     {
+
         // generate these in reverse order,
         // so the addressing offsets work properly
         ret = code_seq_concat(gen_code_const_def(*cdf), ret);
+
         cdf = cdf->next;
     }
     return ret;
@@ -257,8 +261,10 @@ code_seq gen_code_stmt(stmt_t stmt)
 // Generate code for stmt
 code_seq gen_code_assign_stmt(assign_stmt_t stmt)
 {
-    // can't call gen_code_ident,
-    // since stmt.name is not an ident_t
+
+    // debug_print("going into assign_stmt\n");
+    //  can't call gen_code_ident,
+    //  since stmt.name is not an ident_t
     code_seq ret;
     // put value of expression in $v0
     ret = gen_code_expr(*(stmt.expr));
@@ -309,8 +315,29 @@ code_seq gen_code_stmts(stmts_t stmts)
 // Generate code for the if-statment given by stmt
 code_seq gen_code_if_stmt(if_stmt_t stmt)
 {
-    // bail_with_error("TODO: no implementation of gen_code_if_stmt yet!");
-    return code_seq_empty();
+    /*
+    [code put push C's truth value on top of the stack]
+    [code to pop top of stack into $v0]  # $v0 is an arbitrary choice from the available registers
+    BEQ $0, $v0, [length(S1)+1] # skip S1 if false
+    [code for S1]
+    BEQ $0, $0, [length(S2)] # skip else part (finish)
+    [code for S2]
+    */
+
+    // put truth value of stmt.expr in $v0
+    code_seq ret = gen_code_condition(stmt.condition);
+    // ret = code_seq_concat(ret, gen_code_expr(stmt.expr));
+    // debug_print("expression passsed\n");
+    ret = code_seq_concat(ret, code_pop_stack_into_reg(V0));
+
+    code_seq cbody = gen_code_stmt(*(stmt.then_stmt));
+    cbody = code_seq_concat(cbody, gen_code_stmt(*(stmt.else_stmt)));
+    int cbody_len = code_seq_size(cbody);
+    // skip over body if $v0 contains false
+    ret = code_seq_add_to_end(ret, code_beq(V0, 0, cbody_len));
+    return code_seq_concat(ret, cbody);
+
+    // return code_seq_empty();
 }
 
 // Generate code for the if-statment given by stmt
@@ -366,7 +393,19 @@ code_seq gen_code_skip_stmt(skip_stmt_t stmt)
 // May modify HI,LO when executed
 code_seq gen_code_condition(condition_t cond)
 {
-    // bail_with_error("TODO: no implementation of gen_code_code_condition yet!");
+    switch (cond.cond_kind)
+    {
+    case ck_odd:
+        return gen_code_odd_condition(cond.data.odd_cond);
+        break;
+    case ck_rel:
+        return gen_code_rel_op_condition(cond.data.rel_op_cond);
+        break;
+    default:
+        bail_with_error("Unexpected type_tag (%d) in scope_check_cond!", cond.cond_kind);
+        break;
+    }
+
     return code_seq_empty();
 }
 
@@ -376,8 +415,8 @@ code_seq gen_code_condition(condition_t cond)
 // Modifies SP, HI,LO when executed
 code_seq gen_code_odd_condition(odd_condition_t cond)
 {
-    // bail_with_error("TODO: no implementation of gen_code_odd_condition yet!");
-    return code_seq_empty();
+    code_seq ret = gen_code_expr(cond.expr);
+    return ret;
 }
 
 // Generate code for cond, putting its truth value
@@ -386,8 +425,9 @@ code_seq gen_code_odd_condition(odd_condition_t cond)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_rel_op_condition(rel_op_condition_t cond)
 {
-    // bail_with_error("TODO: no implementation of gen_code_rel_op_condition yet!");
-    return code_seq_empty();
+    code_seq ret = gen_code_expr(cond.expr1);
+    ret = code_seq_concat(ret, gen_code_expr(cond.expr2));
+    return ret;
 }
 
 // Generate code for the rel_op
@@ -397,7 +437,8 @@ code_seq gen_code_rel_op_condition(rel_op_condition_t cond)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_rel_op(token_t rel_op)
 {
-    /*
+
+    // debug_print("Token code (%d) in gen_code_rel_op", rel_op.code);
 
     // load top of the stack (the second operand) into AT
     code_seq ret = code_pop_stack_into_reg(AT);
@@ -407,47 +448,45 @@ code_seq gen_code_rel_op(token_t rel_op)
     // start out by doing the comparison
     // and skipping the next 2 instructions if it's true
     code_seq do_op = code_seq_empty();
-    switch (rel_op.code) {
+    switch (rel_op.code)
+    {
     case eqsym:
         do_op = code_seq_singleton(code_beq(V0, AT, 2));
 
-    break;
+        break;
     case neqsym:
         do_op = code_seq_singleton(code_bne(V0, AT, 2));
 
-    break;
+        break;
     case ltsym:
         do_op = code_seq_singleton(code_sub(V0, AT, V0));
         do_op = code_seq_add_to_end(do_op, code_bltz(V0, 2));
 
-    break;
+        break;
     case leqsym:
         do_op = code_seq_singleton(code_sub(V0, AT, V0));
         do_op = code_seq_add_to_end(do_op, code_blez(V0, 2));
 
-    break;
+        break;
     case gtsym:
         do_op = code_seq_singleton(code_sub(V0, AT, V0));
         do_op = code_seq_add_to_end(do_op, code_bgtz(V0, 2));
-    break;
+        break;
     case geqsym:
         do_op = code_seq_singleton(code_sub(V0, AT, V0));
         do_op = code_seq_add_to_end(do_op, code_bgez(V0, 2));
-    break;
+        break;
     default:
-    bail_with_error("Unknown token code (%d) in gen_code_rel_op", rel_op.code);
-    break;
+        bail_with_error("Unknown token code (%d) in gen_code_rel_op", rel_op.code);
+        break;
     }
     ret = code_seq_concat(ret, do_op);
     // rest of the code for the comparisons
-    ret = code_seq_add_to_end(ret, code_add(0, 0, AT)); // put false in AT
-    ret = code_seq_add_to_end(ret, code_beq(0, 0, 1)); // skip next instr
+    ret = code_seq_add_to_end(ret, code_add(0, 0, AT));  // put false in AT
+    ret = code_seq_add_to_end(ret, code_beq(0, 0, 1));   // skip next instr
     ret = code_seq_add_to_end(ret, code_addi(0, AT, 1)); // put true in AT
     ret = code_seq_concat(ret, code_push_reg_on_stack(AT));
     return ret;
-
-    */
-    return code_seq_empty();
 }
 
 // Generate code for the expression exp
@@ -481,8 +520,13 @@ code_seq gen_code_expr(expr_t exp)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_binary_op_expr(binary_op_expr_t exp)
 {
-    // bail_with_error("TODO: no implementation of gen_code_binary_op_expr yet!");
-    return code_seq_empty();
+    // put the values of the two subexpressions on the stack
+    code_seq ret = gen_code_expr(*(exp.expr1));
+    ret = code_seq_concat(ret, gen_code_expr(*(exp.expr2)));
+    // check the types match
+    // do the operation, putting the result on the stack
+    ret = code_seq_concat(ret, gen_code_arith_op(exp.arith_op));
+    return ret;
 }
 
 // Generate code to apply arith_op to the
@@ -500,20 +544,18 @@ code_seq gen_code_arith_op(token_t arith_op)
     code_seq do_op = code_seq_empty();
     switch (arith_op.code)
     {
-    /*
     case plussym:
-    do_op = code_seq_add_to_end(do_op, code_add(V0, AT, V0));
-    break;
+        do_op = code_seq_add_to_end(do_op, code_add(V0, AT, V0));
+        break;
     case minussym:
-    do_op = code_seq_add_to_end(do_op, code_sub(V0, AT, V0));
-    break;
+        do_op = code_seq_add_to_end(do_op, code_sub(V0, AT, V0));
+        break;
     case multsym:
-    do_op = code_seq_add_to_end(do_op, code_mul(V0, AT, V0));
-    break;
+        do_op = code_seq_add_to_end(do_op, code_mul(V0, AT));
+        break;
     case divsym:
-    do_op = code_seq_add_to_end(do_op, code_div(V0, AT, V0));
-    break;
-    */
+        do_op = code_seq_add_to_end(do_op, code_div(V0, AT));
+        break;
     default:
         bail_with_error("Unexpected arithOp (%d) in gen_code_arith_op", arith_op.code);
         break;
@@ -527,6 +569,8 @@ code_seq gen_code_arith_op(token_t arith_op)
 // Modifies T9, V0, and SP when executed
 code_seq gen_code_ident(ident_t id)
 {
+
+    // debug_print("going into ident_t \n");
 
     assert(id.idu != NULL);
     code_seq ret = code_compute_fp(T9, id.idu->levelsOutward);
@@ -542,6 +586,9 @@ code_seq gen_code_ident(ident_t id)
 // Generate code to put the given number on top of the stack
 code_seq gen_code_number(number_t num)
 {
+
+    // debug_print("going into code_number\n");
+
     unsigned int global_offset = literal_table_lookup(num.text, num.value);
     return code_seq_concat(code_seq_singleton(code_lw(GP, V0, global_offset)), code_push_reg_on_stack(V0));
 }

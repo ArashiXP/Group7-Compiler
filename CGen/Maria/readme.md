@@ -15,4 +15,6 @@ write_stmt works and literal table is completed
 
 var_decls working, and passing 11 cases
 
-Having a lot of trouble with const stuff
+Having a lot of trouble with const stuff. (still trying to fix it)
+
+if_stmt passing both else and then stmts as correct, will try to fix it later on
