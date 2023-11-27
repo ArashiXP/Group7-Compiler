@@ -134,7 +134,7 @@ check-outputs: $(COMPILER) $(VM)
 		echo running $(RUNVM) on "$$f.bof"; \
 		$(RM) "$$f.myo"; \
 		cat char-inputs.txt | $(RUNVM) "$$f.bof" > "$$f.myo" 2>&1; \
-		diff -w -B "$$f.out" "$$f.myo" && echo 'passed!' || DIFFS=1; \
+		diff -w -B -qs "$$f.out" "$$f.myo" && echo 'passed!' || DIFFS=1; \
 	done; \
 	if test 0 = $$DIFFS; \
 	then \
