@@ -7,6 +7,12 @@ Getting a weird error for the write function, most of the things that I did wher
 
 Also added new functions to gen_code.h
 
-11/22
+11/23
 
 write_stmt works and literal table is completed
+
+11/27
+
+var_decls working, and passing 11 cases
+
+Having a lot of trouble with const stuff
