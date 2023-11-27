@@ -1,5 +1,6 @@
 /* $Id: gen_code.c,v 1.10 2023/03/30 21:28:07 leavens Exp $ */
 #include <string.h>
+#include <limits.h>
 #include "utilities.h"
 #include "gen_code.h"
 #include "code.h"
@@ -85,7 +86,9 @@ code_seq gen_code_block(block_t blk)
     code_seq ret;
     // We want to make the main program's AR look like all blocks... so:
     // allocate space and initialize any variables
+    // ret = gen_code_const_decls(blk.const_decls);
     ret = gen_code_var_decls(blk.var_decls);
+    // ret = code_seq_concat(ret, gen_code_var_decls(blk.var_decls));
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //       NEED TO ADD OTHER PARTS OF THE AST BLOCK
@@ -95,6 +98,7 @@ code_seq gen_code_block(block_t blk)
     // there is no static link for the program as a whole,
     // so nothing to do for saving FP into A0 as would be done for a block
     ret = code_seq_concat(ret, code_save_registers_for_AR());
+    // ret = code_seq_concat(ret, gen_code_const_decls(blk.const_decls));
     ret = code_seq_concat(ret, gen_code_stmt(blk.stmt));
     ret = code_seq_concat(ret, code_restore_registers_from_AR());
     ret = code_seq_concat(ret, code_deallocate_stack_space(vars_len_in_bytes));
@@ -108,29 +112,43 @@ code_seq gen_code_block(block_t blk)
 // (one to allocate space and two to initialize that space)
 code_seq gen_code_const_decls(const_decls_t cds)
 {
-    // bail_with_error("TODO: no implementation of gen_code_const_decls yet!");
-    return code_seq_empty();
+    code_seq ret = code_seq_empty();
+    const_decl_t *cdp = cds.const_decls;
+    while (cdp != NULL)
+    {
+        // generate these in reverse order,
+        // so the addressing offsets work properly
+        ret = code_seq_concat(gen_code_const_decl(*cdp), ret);
+        cdp = cdp->next;
+    }
+    return ret;
 }
 
 // Generate code for the const-decl, cd
 code_seq gen_code_const_decl(const_decl_t cd)
 {
-    // bail_with_error("TODO: no implementation of gen_code_const_decl yet!");
-    return code_seq_empty();
+    return gen_code_const_defs(cd.const_defs);
 }
 
 // Generate code for the const-defs, cdfs
 code_seq gen_code_const_defs(const_defs_t cdfs)
 {
-    // bail_with_error("TODO: no implementation of gen_code_const_defs yet!");
-    return code_seq_empty();
+    code_seq ret = code_seq_empty();
+    const_def_t *cdf = cdfs.const_defs;
+    while (cdf != NULL)
+    {
+        // generate these in reverse order,
+        // so the addressing offsets work properly
+        ret = code_seq_concat(gen_code_const_def(*cdf), ret);
+        cdf = cdf->next;
+    }
+    return ret;
 }
 
 // Generate code for the const-def, cdf
 code_seq gen_code_const_def(const_def_t cdf)
 {
-    // bail_with_error("TODO: no implementation of gen_code_const_def yet!");
-    return code_seq_empty();
+    return gen_code_ident(cdf.ident);
 }
 
 // Generate code for the var_decls_t vds to out
@@ -168,8 +186,10 @@ code_seq gen_code_idents(idents_t idents)
     ident_t *idp = idents.idents;
     while (idp != NULL)
     {
+        // allocates space
         code_seq alloc_and_init = code_seq_singleton(code_addi(SP, SP, -BYTES_PER_WORD));
 
+        // initializes the space
         alloc_and_init = code_seq_add_to_end(alloc_and_init, code_sw(SP, 0, 0));
 
         // Generate these in revese order,
@@ -237,8 +257,23 @@ code_seq gen_code_stmt(stmt_t stmt)
 // Generate code for stmt
 code_seq gen_code_assign_stmt(assign_stmt_t stmt)
 {
-    // bail_with_error("TODO: no implementation of gen_code_assign_stmt yet!");
-    return code_seq_empty();
+    // can't call gen_code_ident,
+    // since stmt.name is not an ident_t
+    code_seq ret;
+    // put value of expression in $v0
+    ret = gen_code_expr(*(stmt.expr));
+    assert(stmt.idu != NULL);
+    assert(id_use_get_attrs(stmt.idu) != NULL);
+    ret = code_seq_concat(ret, code_pop_stack_into_reg(V0));
+    // put frame pointer from the lexical address of the name
+    // (using stmt.idu) into $t9
+    ret = code_seq_concat(ret, code_compute_fp(T9, stmt.idu->levelsOutward));
+    unsigned int offset_count = id_use_get_attrs(stmt.idu)->offset_count;
+    assert(offset_count <= USHRT_MAX); // it has to fit!
+
+    ret = code_seq_add_to_end(ret, code_sw(T9, V0, offset_count));
+
+    return ret;
 }
 
 // Generate code for stmt
@@ -251,8 +286,11 @@ code_seq gen_code_call_stmt(call_stmt_t stmt)
 // Generate code for stmt
 code_seq gen_code_begin_stmt(begin_stmt_t stmt)
 {
-    // bail_with_error("TODO: no implementation of gen_code_begin_stmt yet!");
-    return code_seq_empty();
+    code_seq ret;
+
+    ret = gen_code_stmts(stmt.stmts);
+
+    return ret;
 }
 
 // Generate code for the list of statments given by stmts
@@ -285,8 +323,17 @@ code_seq gen_code_while_stmt(while_stmt_t stmt)
 // Generate code for the read statment given by stmt
 code_seq gen_code_read_stmt(read_stmt_t stmt)
 {
-    // bail_with_error("TODO: no implementation of gen_code_read_stmt yet!");
-    return code_seq_empty();
+    // put number read into $v0
+    code_seq ret = code_seq_singleton(code_rch());
+    // put frame pointer from the lexical address of the name
+    // (using stmt.idu) into $t9
+    assert(stmt.idu != NULL);
+    ret = code_seq_concat(ret, code_compute_fp(T9, stmt.idu->levelsOutward));
+    assert(id_use_get_attrs(stmt.idu) != NULL);
+    unsigned int offset_count = id_use_get_attrs(stmt.idu)->offset_count;
+    assert(offset_count <= USHRT_MAX); // it has to fit!
+    ret = code_seq_add_to_end(ret, code_seq_singleton(code_sw(T9, V0, offset_count)));
+    return ret;
 }
 
 // Generate code for the write statment given by stmt.
@@ -350,7 +397,56 @@ code_seq gen_code_rel_op_condition(rel_op_condition_t cond)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_rel_op(token_t rel_op)
 {
-    // bail_with_error("TODO: no implementation of gen_code_rel_op yet!");
+    /*
+
+    // load top of the stack (the second operand) into AT
+    code_seq ret = code_pop_stack_into_reg(AT);
+    // load next element of the stack into V0
+    ret = code_seq_concat(ret, code_pop_stack_into_reg(V0));
+
+    // start out by doing the comparison
+    // and skipping the next 2 instructions if it's true
+    code_seq do_op = code_seq_empty();
+    switch (rel_op.code) {
+    case eqsym:
+        do_op = code_seq_singleton(code_beq(V0, AT, 2));
+
+    break;
+    case neqsym:
+        do_op = code_seq_singleton(code_bne(V0, AT, 2));
+
+    break;
+    case ltsym:
+        do_op = code_seq_singleton(code_sub(V0, AT, V0));
+        do_op = code_seq_add_to_end(do_op, code_bltz(V0, 2));
+
+    break;
+    case leqsym:
+        do_op = code_seq_singleton(code_sub(V0, AT, V0));
+        do_op = code_seq_add_to_end(do_op, code_blez(V0, 2));
+
+    break;
+    case gtsym:
+        do_op = code_seq_singleton(code_sub(V0, AT, V0));
+        do_op = code_seq_add_to_end(do_op, code_bgtz(V0, 2));
+    break;
+    case geqsym:
+        do_op = code_seq_singleton(code_sub(V0, AT, V0));
+        do_op = code_seq_add_to_end(do_op, code_bgez(V0, 2));
+    break;
+    default:
+    bail_with_error("Unknown token code (%d) in gen_code_rel_op", rel_op.code);
+    break;
+    }
+    ret = code_seq_concat(ret, do_op);
+    // rest of the code for the comparisons
+    ret = code_seq_add_to_end(ret, code_add(0, 0, AT)); // put false in AT
+    ret = code_seq_add_to_end(ret, code_beq(0, 0, 1)); // skip next instr
+    ret = code_seq_add_to_end(ret, code_addi(0, AT, 1)); // put true in AT
+    ret = code_seq_concat(ret, code_push_reg_on_stack(AT));
+    return ret;
+
+    */
     return code_seq_empty();
 }
 
@@ -396,8 +492,34 @@ code_seq gen_code_binary_op_expr(binary_op_expr_t exp)
 // May also modify SP, HI,LO when executed
 code_seq gen_code_arith_op(token_t arith_op)
 {
-    // bail_with_error("TODO: no implementation of gen_code_arith_op yet!");
-    return code_seq_empty();
+    // load top of the stack (the second operand) into AT
+    code_seq ret = code_pop_stack_into_reg(AT);
+    // load next element of the stack into V0
+    ret = code_seq_concat(ret, code_pop_stack_into_reg(V0));
+
+    code_seq do_op = code_seq_empty();
+    switch (arith_op.code)
+    {
+    /*
+    case plussym:
+    do_op = code_seq_add_to_end(do_op, code_add(V0, AT, V0));
+    break;
+    case minussym:
+    do_op = code_seq_add_to_end(do_op, code_sub(V0, AT, V0));
+    break;
+    case multsym:
+    do_op = code_seq_add_to_end(do_op, code_mul(V0, AT, V0));
+    break;
+    case divsym:
+    do_op = code_seq_add_to_end(do_op, code_div(V0, AT, V0));
+    break;
+    */
+    default:
+        bail_with_error("Unexpected arithOp (%d) in gen_code_arith_op", arith_op.code);
+        break;
+    }
+    do_op = code_seq_concat(do_op, code_push_reg_on_stack(V0));
+    return code_seq_concat(ret, do_op);
 }
 
 // Generate code to put the value of the given identifier
@@ -405,8 +527,16 @@ code_seq gen_code_arith_op(token_t arith_op)
 // Modifies T9, V0, and SP when executed
 code_seq gen_code_ident(ident_t id)
 {
-    // bail_with_error("TODO: no implementation of gen_code_ident yet!");
-    return code_seq_empty();
+
+    assert(id.idu != NULL);
+    code_seq ret = code_compute_fp(T9, id.idu->levelsOutward);
+    assert(id_use_get_attrs(id.idu) != NULL);
+    unsigned int offset_count = id_use_get_attrs(id.idu)->offset_count;
+    assert(offset_count <= USHRT_MAX); // it has to fit!
+
+    ret = code_seq_add_to_end(ret, code_lw(T9, V0, offset_count));
+
+    return code_seq_concat(ret, code_push_reg_on_stack(V0));
 }
 
 // Generate code to put the given number on top of the stack
