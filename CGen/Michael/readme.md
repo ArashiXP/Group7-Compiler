@@ -7,9 +7,9 @@ Pulling my code isn't going to do much but I did set up all the starter files we
 I managed to get one more test case working so we are at 12/39 which makes 27 fails and with -3 for each failed test that gives<br>
 us<br> 
 
-160-81 = 87<br>
-adding the 20 points from no errors on eustis we have 107<br>
-and adding the 20 points for readability we get 127 / 200<br>
+160-81 = 79<br>
+adding the 20 points from no errors on eustis we have 99<br>
+and adding the 20 points for readability we get 119 / 200<br>
 
 if the rubric is wrong then if we ammount each test is worth 3 points we well end up with a 76/200 which will still give us an<br>
 an overall good project grade
