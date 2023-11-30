@@ -88,9 +88,8 @@ code_seq gen_code_block(block_t blk)
     code_seq ret;
     // We want to make the main program's AR look like all blocks... so:
     // allocate space and initialize any variables
-    ret = gen_code_const_decls(blk.const_decls);
-    // ret = gen_code_var_decls(blk.var_decls);
-    ret = code_seq_concat(ret, gen_code_var_decls(blk.var_decls));
+    ret = gen_code_var_decls(blk.var_decls);
+    ret = code_seq_concat(ret, gen_code_const_decls(blk.const_decls));
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //       NEED TO ADD OTHER PARTS OF THE AST BLOCK
@@ -100,7 +99,7 @@ code_seq gen_code_block(block_t blk)
     // there is no static link for the program as a whole,
     // so nothing to do for saving FP into A0 as would be done for a block
     ret = code_seq_concat(ret, code_save_registers_for_AR());
-    // ret = code_seq_concat(ret, gen_code_const_decls(blk.const_decls));
+
     ret = code_seq_concat(ret, gen_code_stmt(blk.stmt));
     ret = code_seq_concat(ret, code_restore_registers_from_AR());
     ret = code_seq_concat(ret, code_deallocate_stack_space(vars_len_in_bytes));
@@ -152,7 +151,15 @@ code_seq gen_code_const_defs(const_defs_t cdfs)
 // Generate code for the const-def, cdf
 code_seq gen_code_const_def(const_def_t cdf)
 {
-    return gen_code_ident(cdf.ident);
+
+    /*
+        [load L's value from $gp + 4*ofst into $at (use the instruction: LW $gp, $at, ofst)]
+        [allocate one word on the stack (use ADDI $sp, $sp, -4)]
+        [store $at into the stack top (use SW $sp, $at, 0)]
+    */
+
+    unsigned int global_offset = literal_table_lookup(cdf.number.text, cdf.number.value);
+    return code_seq_concat(code_seq_singleton(code_lw(GP, AT, global_offset)), code_push_reg_on_stack(AT));
 }
 
 // Generate code for the var_decls_t vds to out
@@ -586,8 +593,6 @@ code_seq gen_code_ident(ident_t id)
 // Generate code to put the given number on top of the stack
 code_seq gen_code_number(number_t num)
 {
-
-    // debug_print("going into code_number\n");
 
     unsigned int global_offset = literal_table_lookup(num.text, num.value);
     return code_seq_concat(code_seq_singleton(code_lw(GP, V0, global_offset)), code_push_reg_on_stack(V0));
